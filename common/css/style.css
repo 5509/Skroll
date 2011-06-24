@@ -1,0 +1,149 @@
+@charset "utf-8";
+
+@import url("share/default.css");
+@import url("share/fonts.css");
+@import url(http://fonts.googleapis.com/css?family=Copse);
+
+/* Clearfix
+=================================*/
+
+div.pagebody div.txt { /zoom : 1; }
+div.pagebody div.txt:after { content : ''; display : block; clear : both; height:0; }
+
+/* =========================================
+*  COMMON
+* ========================================= */
+
+html {
+	height: 100%;
+}
+
+body {
+	height: 100%;
+	color: #252525;
+	background: url(../images/bg_glow.png) repeat;
+	font-family: Helvetica;
+}
+
+p.note {
+	margin: 0 auto;
+	width: 630px;
+	padding: 5px 0 .5em;
+	text-align: right;
+}
+p.attention {
+	margin: 0 auto;
+	width: 600px;
+	padding: 0 0 .5em;
+	font-size: 93%;
+	color: #f60;
+}
+
+div#alert {
+	margin: 0 auto 1em;
+	border: solid #f60 3px;
+	padding: 5px 10px;
+	width: 574px;
+}
+
+h1 {
+	font-size: 3.5em;
+	font-family: "Copse", sans-serif;
+	text-align: center;
+	text-shadow: white 0 1px 0;
+}
+
+a {
+	color: #5B80C2;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #666;
+	text-decoration: none;
+}
+
+/* =========================================
+*  FRAME
+* ========================================= */
+
+div.pagebody {
+	margin: 0 auto 1em;
+	padding: 15px;
+	width: 600px;
+	background: #fafafa;
+	text-shadow: white 0 1px 0;
+	background: url(../images/dots.png) repeat-x,
+				-webkit-gradient(radial, center top, 300, center top, 0, from(hsla(0,0%,100%,0)), to(hsla(0,0%,100%,.7))),
+				-webkit-gradient(linear, left top, left 200, from(hsla(0,0%,100%,.2)), to(hsla(0,0%,100%,0)));
+	background: url(../images/dots.png) repeat-x,
+				-moz-radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				-moz-linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+	background: url(../images/dots.png) repeat-x,
+				-o-radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				-o-linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+	background: url(../images/dots.png) repeat-x,
+				radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+}
+
+div.pagebody div.txt {
+	width: 250px;
+	xheight: 400px;
+	position: relative; /* これはJSで追加する */
+	xoverflow: hidden; /* これはJSで追加する */
+}
+div.pagebody div.txt p {
+	padding-bottom: 1em;
+	text-justify: distribute;
+}
+
+div.pagebody p.photo {
+}
+div.pagebody p.right {
+	float: right;
+	padding: 0 0 1em 1em;
+}
+div.pagebody p.left {
+	float: left;
+	padding: 0 1em 1em 0;
+}
+
+div.pagebody p.photo span.caption {
+	padding-top: 5px;
+	display: block;
+	font-size: 77%;
+}
+
+h2 {
+	margin-top: 1em;
+	border: solid #ccc 1px;
+	border-top: none;
+	border-right: none;
+	border-left-width: 5px;
+	padding: .3em .7em;
+	font-size: 116%;
+}
+	
+p.copy {
+	padding: 0 0 3em;
+	text-align: center;
+	text-shadow: white 0 1px 0;
+}
+
+
+
+
+div.scrollbar {
+	border-radius: 5px;
+	width: 10px;
+	height: 80%;
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	background: #000;
+	opacity: .6;
+	filter: alpha(opacity=80);
+	cursor: pointer;
+}
