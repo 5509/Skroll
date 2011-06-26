@@ -59,16 +59,21 @@
 		this.imgLength = 0;
 		// Option
 		this.option = $.extend({
-			margin: "2em auto 0", // なんかテキトーに
-			width: 250,
-			height: 300,
-			opacity: .5,
-			inSpeed: 150,
-			outSpeed: 300,
-			delayTime: 200,
-			scrollBarSpace: 0,
-			scrollBarHide: true
+			margin         : 0,
+			width          : parseInt(elm.css("width"), 10),
+			height         : parseInt(elm.css("height"), 10),
+			opacity        : .5,
+			inSpeed        : 150,
+			outSpeed       : 300,
+			delayTime      : 200,
+			scrollBarSpace : 0,
+			scrollBarHide  : true
 		}, option);
+
+		// コンテンツの高さがアウターよりも大きければという処理を入れたほうがよさそう
+		elm.css("height", "auto");
+		this.innerHeight = parseInt(elm.css("height"), 10);
+
 		// Init
 		this.init();
 	}
@@ -119,12 +124,12 @@
 		},
 		init: function() {
 			var _this = this,
+				_barTop = undefined,
+				_opt = this.option,
 				$elm = this.$elm,
 				$bar = this.$bar,
 				$images = this.$images,
-				$outer = this.$outer,
-				_barTop = undefined,
-				_opt = this.option;
+				$outer = this.$outer;
 
 			$outer
 				.bind("mouseover", function() {
@@ -146,21 +151,27 @@
 					// detailはwheelDeltaと正負が逆になり
 					// 値もwheelDeltaの1/10
 					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
-						_barTop = parseInt($bar.css("top")) - _delta;
+						_barTop = parseInt($bar.css("top"), 10) - _delta;
 					if ( !_this.setUp ) _this.settingUpScroll();
 					_this.innerScrolling(_barTop);
 					e.preventDefault();
 				});
 
 			$elm
-				.css("width", parseInt($elm.css("width")) - _opt.scrollBarSpace)
+				.css({
+					margin   : 0,
+					width    : parseInt($elm.css("width"), 10) - _opt.scrollBarSpace,
+					height   : "auto",
+					overflow : "auto",
+					position : "relative"
+				})
 				.wrap(
 					$outer
 						.css({
 							margin       : _opt.margin,
 							paddingRight : _opt.scrollBarSpace,
-							width        : _opt.width - _opt.scrollBarSpace,
-							height       : _opt.height,
+							width        : parseInt(_opt.width,  10) - _opt.scrollBarSpace,
+							height       : parseInt(_opt.height, 10),
 							position     : "relative",
 							overflow     : "hidden"
 						})
@@ -169,8 +180,8 @@
 				.append(
 					$bar
 						.css({
-							height: (_opt.height / _this.innerHeight * _opt.height),
-							opacity: _opt.opacity
+							height  : Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight,
+							opacity : _opt.opacity
 						})
 				);
 
@@ -193,7 +204,7 @@
 			}
 
 			$bar.bind(_this.mousedown, function(e) {
-				_barTop = parseInt($bar.css("top"));
+				_barTop = parseInt($bar.css("top"), 10);
 				this.dragTop = e.clientY;
 				_this.setUp = false;
 				_this.dragging = true;
@@ -267,7 +278,7 @@
 				return;
 			}
 			setTimeout(arguments.callee, interval || 20);
-		})();
+		}());
 		 return this;
 	}
 
