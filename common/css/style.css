@@ -136,14 +136,12 @@ p.copy {
 
 
 div.scrollbar {
-	border-radius: 5px;
-	width: 10px;
+	border-radius: 4px;
+	width: 8px;
 	height: 80%;
 	position: absolute;
 	top: 2px;
 	right: 2px;
 	background: #000;
-	opacity: .6;
-	filter: alpha(opacity=80);
-	cursor: pointer;
+	cursor: move;
 }
