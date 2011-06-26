@@ -1,13 +1,18 @@
 /**
  * Skroll
  *
- * @version      0.1
+ * @version      0.2
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-06-26 20:40
+ * 2011-06-27 01:37
+ */
+/*
+ * MEMO
+ * 基本縦のスクロールとして使う
+ * 横スクロールはオプションで明示的に狭い幅を与えた場合に有効
  */
 ;(function($, window, document, undefined) {
 
@@ -36,47 +41,71 @@
 
 	// Skroll
 	var Skroll = function(elm, option) {
+		// Option
+		this.option = $.extend({
+			margin          : 0,
+			width           : parseInt(elm.css("width"), 10),
+			height          : parseInt(elm.css("height"), 10),
+			inSpeed         : 150,
+			outSpeed        : 300,
+			delayTime       : 200,
+			scrollBarWidth  : 10,
+			scrollBarHeight : 10,
+			scrollBarSpace  : 0,
+			scrollBarColor  : "#000",
+			opacity         : .5,
+			scrollBarHide   : true,
+			scrollX         : false
+		}, option);
+
 		this.$elm = elm;
 		this.$outer = $("<div class='scrollOuter'></div>");
-		this.$bar = $("<div class='scrollbar'></div>").hide();
+		this.$bar = $("<div class='scrollbar'></div>").css({
+			position: "absolute",
+			borderRadius: this.option.scrollBarWidth/2 + "px",
+			WebKitBorderRadius: this.option.scrollBarWidth/2 + "px",
+			MozBorderRadius: this.option.scrollBarWidth/2 + "px",
+			MsBorderRadius: this.option.scrollBarWidth/2 + "px",
+			cursor: "move",
+			backgroundColor: this.option.scrollBarColor
+		}).hide();
 		this.$images = $("img", elm);
-		this.innerHeight = elm.get(0).offsetHeight;
 		this.enteringCursor = false;
 		this.dragging = false;
+		this.draggingX = false;
 		this.scrolling = false;
 		this.dragTop = 0;
-		this.dragTo = 0;
-		this.id = ".scrl" + randomNumber(); // イベント識別子
+		this.dragLeft = 0;
+		this.innerWidth = elm.get(0).offsetWidth,
+		this.id = ".scrl" + (Math.floor(Math.random() * 1000) * 5); // イベント識別子
 		this.mousedown = "mousedown" + this.id;
 		this.mousemove = "mousemove" + this.id;
 		this.mouseup = "mouseup" + this.id;
 		this.outerHeight = undefined;
 		this.diff = undefined;
+		this.diffX = undefined;
+		this.scrollBarWidth = undefined;
 		this.scrollBarHeight = undefined;
 		this.innerScrollVal = undefined;
+		this.innerScrollValX = undefined;
 		this.setUp = undefined;
+		this.setUpX = undefined;
 		this.imgLoaded = 0;
 		this.imgLength = 0;
-		// Option
-		this.option = $.extend({
-			margin         : 0,
-			width          : parseInt(elm.css("width"), 10),
-			height         : parseInt(elm.css("height"), 10),
-			opacity        : .5,
-			inSpeed        : 150,
-			outSpeed       : 300,
-			delayTime      : 200,
-			scrollBarSpace : 0,
-			scrollBarHide  : true
-		}, option);
+		this.sideScroll = false;
 
 		// コンテンツの高さがアウターよりも大きければという処理を入れたほうがよさそう
 		elm.css("height", "auto");
-		this.innerHeight = parseInt(elm.css("height"), 10);
-
+		this.innerHeight = elm.get(0).offsetHeight;
+		// 明示的なwidthの指定があり
+		// そのwidthがコンテンツ幅を超えている場合は、横スクロールをONにする
+		if ( option.width ) {
+			this.sideScroll = true;
+			this.$barX = this.$bar.clone();
+		}
 		// Init
 		this.init();
-	}
+	};
 	Skroll.prototype = {
 		settingUpScroll: function(e) {
 			var _this = this,
@@ -92,8 +121,25 @@
 			_this.diff = _this.innerHeight - _this.outerHeight;
 			_this.scrollBarHeight = $bar.height();
 			_this.innerScrollVal = _this.diff / (_this.outerHeight - _this.scrollBarHeight);
-			_this.dragTop = e ? e.clientY - _this.dragTo : _this.dragTo;
+			_this.dragTop = e ? e.clientY : 0;
 			_this.scrolling = _this.dragging ? false : true;
+		},
+		settingUpScrollX: function(e) {
+			var _this = this,
+				$outer = this.$outer,
+				$barX = this.$barX;
+
+			if ( !_this.setUpX ) {
+				_this.setUpX = true;
+			} else {
+				return;
+			}
+			_this.outerWidth = $outer.width();
+			_this.diffX = _this.innerWidth - _this.outerWidth;
+			_this.scrollBarWidth = $barX.width();
+			_this.innerScrollValX = _this.diffX / (_this.outerWidth - _this.scrollBarWidth);
+			_this.dragLeft = e ? e.clientX : 0;
+			_this.scrolling = _this.draggingX ? false : true;
 		},
 		innerScrolling: function(_barTop) {
 			var _this = this,
@@ -122,45 +168,98 @@
 				});
 			}
 		},
+		innerScrollingX: function(_barLeft) {
+			var _this = this,
+				_innerLeft = _barLeft * _this.innerScrollValX,
+				// ↑インナーのレフト位置
+				_innerScrolling = _barLeft >= _this.outerWidth - _this.scrollBarWidth,
+				// ↑ドラッグがスクロール許容量を超えてしまったときにtrue
+				_maxInnerLeft = -(_this.outerWidth - _this.scrollBarWidth) * _this.innerScrollValX,
+				// ↑インナーの最大レフト位置
+				$barX = _this.$barX,
+				$elm = _this.$elm;
+
+			$barX.css({
+				left: _barLeft <= 0
+						? 0 : _innerScrolling
+							? _this.outerWidth - _this.scrollBarWidth : _barLeft
+			});
+			if ( !_innerScrolling ) {
+				$elm.css({
+					left: _innerLeft <= 0 ? 0 : -_innerLeft
+				});
+			// スクロールバーが一番下まで移動したらコンテンツも一番下に
+			} else {
+				$elm.css({
+					left: _maxInnerLeft
+				});
+			}
+		},
 		init: function() {
 			var _this = this,
 				_barTop = undefined,
+				_barLeft = undefined,
 				_opt = this.option,
 				$elm = this.$elm,
 				$bar = this.$bar,
 				$images = this.$images,
-				$outer = this.$outer;
+				$outer = this.$outer,
+				$barX = this.$barX ? this.$barX : undefined;
 
 			$outer
 				.bind("mouseover", function() {
 					_this.enteringCursor = true;
 					$bar.stop(true, true).fadeIn(_opt.inSpeed);
+
+					if ( !$barX ) return;
+					$barX.stop(true, true).fadeIn(_opt.inSpeed);
 				})
 				.bind("mouseleave", function() {
 					_this.enteringCursor = false;
-					if ( _this.dragging ) {
+					if ( _this.dragging || _this.draggingX ) {
 						return false;
 					}
 					_this.setUp = false;
 					_this.scrolling = false;
 					if ( _opt.scrollBarHide ) {
 						$bar.fadeOut(_opt.outSpeed);
+						
+						if ( !$barX) return;
+						$barX.fadeOut(_opt.outSpeed);
 					}
 				})
 				.bind(mousewheel, function(e) {
+//					console.log(e);
 					// detailはwheelDeltaと正負が逆になり
 					// 値もwheelDeltaの1/10
 					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
-						_barTop = parseInt($bar.css("top"), 10) - _delta;
-					if ( !_this.setUp ) _this.settingUpScroll();
-					_this.innerScrolling(_barTop);
+						_barTop = parseInt($bar.css("top"), 10) - _delta,
+						_barLeft;
+
+					console.log("delta: " + _delta);
+					console.log(e);
+					//console.log("Y: " + e.clientY);
+					//console.log("X: " + e.clientX);
+
+					if ( !_opt.scrollX ) {
+						if ( !_this.setUp ) _this.settingUpScroll();
+						_this.innerScrolling(_barTop);
+					} else {
+						_barLeft = parseInt($barX.css("left"), 10) - _delta;
+						if ( !_this.setUpX ) _this.settingUpScrollX();
+						_this.innerScrollingX(_barLeft);
+					}
 					e.preventDefault();
+					// MacのTrackpadとマウスのホイール横スクロールは
+					// イベントでは取れないかも
 				});
 
 			$elm
 				.css({
 					margin   : 0,
-					width    : parseInt($elm.css("width"), 10) - _opt.scrollBarSpace,
+					width    : _this.sideScroll ?
+								parseInt($elm.css("width"), 10)
+								: parseInt($elm.css("width"), 10) - _opt.scrollBarSpace,
 					height   : "auto",
 					overflow : "auto",
 					position : "relative"
@@ -168,21 +267,36 @@
 				.wrap(
 					$outer
 						.css({
-							margin       : _opt.margin,
-							paddingRight : _opt.scrollBarSpace,
-							width        : parseInt(_opt.width,  10) - _opt.scrollBarSpace,
-							height       : parseInt(_opt.height, 10),
-							position     : "relative",
-							overflow     : "hidden"
+							margin        : _opt.margin,
+							paddingRight  : _opt.scrollBarSpace,
+							paddingBottom : _this.sideScroll ? _opt.scrollBarSpace : 0,
+							width         : parseInt(_opt.width,  10) - _opt.scrollBarSpace,
+							height        : parseInt(_opt.height, 10),
+							position      : "relative",
+							overflow      : "hidden"
 						})
 				)
 				.parent()
 				.append(
 					$bar
 						.css({
+							width   : _opt.scrollBarWidth,
 							height  : Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight,
+							top     : 0,
+							right   : 0,
 							opacity : _opt.opacity
 						})
+				)
+				.append($barX ?
+					$barX
+						.css({
+							width   : Math.pow(parseInt(_opt.width, 10), 2) / _this.innerWidth,
+							height  : _opt.scrollBarHeight,
+							opacity : _opt.opacity,
+							bottom  : -$barX.get(0).offsetHeight,
+							left    : 0
+						})
+					: undefined
 				);
 
 			// 画像がある場合は画像の読み込み完了を待つ
@@ -231,6 +345,36 @@
 				return false;
 			});
 
+			if ( $barX ) {
+				$barX.bind(_this.mousedown + "x", function(e) {
+					_barLeft = parseInt($barX.css("left"), 10);
+					this.dragLeft = e.clientX;
+					_this.setUpX = false;
+					_this.draggingX = true;
+					_this.scrolling = false;
+					_this.settingUpScrollX(e);
+
+					$document
+						.bind(_this.mousemove + "x", function(e) {
+							if ( _this.draggingX ) {
+								_barLeft = _barLeft + (e.clientX - _this.dragLeft);
+								_this.dragLeft = e.clientX;
+								_this.innerScrollingX(_barLeft);
+							}
+							return false;
+						})
+						.bind(_this.mouseup + "x", function() {
+							_this.draggingX = false;
+							_this.setUpX = false;
+							$document.unbind(_this.mousemove + "x", _this.mouseup + "x");
+							if ( !_this.enteringCursor ) {
+								$barX.fadeOut(_opt.outSpeed);
+							}
+						});
+					return false;
+				});
+			}
+
 			// 他のコンテンツもロードが終わってから
 			// スクロールバーをチラ見せする
 			$(window).load(function() {
@@ -242,18 +386,21 @@
 							.fadeIn(_opt.inSpeed)
 							.delay(_opt.delayTime)
 							.fadeOut(_opt.outSpeed);
+
+						if ( !$barX ) return false;
+						$barX
+							.fadeIn(_opt.inSpeed)
+							.delay(_opt.delayTime)
+							.fadeOut(_opt.outSpeed);
 					} else {
 						$bar.fadeIn(_opt.inSpeed);
+						if ( !barX ) return false;
+						$barX.fadeIn(_opt.inSpeed);
 					}
 				}
 			});
 		}
-	}
-
-	// イベントにIDをふるためのもの
-	function randomNumber() {
-		return Math.floor(Math.random() * 1000) * 5;
-	}
+	};
 
 	/**
 	 * m5ImgLoad
