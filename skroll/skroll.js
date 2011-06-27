@@ -1,18 +1,23 @@
 /**
  * Skroll
  *
- * @version      0.2
+ * @version      0.3
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-06-27 01:37
+ * 2011-06-27 16:58
  */
 /*
- * MEMO
+ * MEMO:
  * 基本縦のスクロールとして使う
  * 横スクロールはオプションで明示的に狭い幅を与えた場合に有効
+ *
+ * TODO:
+ * IEの対応（主に7以下
+ * Androidのtouchmove対応が微妙っぽい
+ * iOS5の対応をどうするのか
  */
 ;(function($, window, document, undefined) {
 
@@ -37,10 +42,12 @@
 	// Global
 	var mobile = "ontouchstart" in window,
 		mousewheel = "onmousewheel" in window ? "mousewheel" : "DOMMouseScroll",
-		$document = $(document);
+		$document = $(document),
+		$html = $("html");
 
 	// Skroll
 	var Skroll = function(elm, option) {
+		var _borderRadius = undefined;
 		// Option
 		this.option = $.extend({
 			margin          : 0,
@@ -49,24 +56,32 @@
 			inSpeed         : 150,
 			outSpeed        : 300,
 			delayTime       : 200,
+			scrollBarBorder : 1,
 			scrollBarWidth  : 8,
 			scrollBarHeight : 8,
 			scrollBarSpace  : 0,
 			scrollBarColor  : "#000",
 			opacity         : .5,
+			cursor          : {
+				grab: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVBJREFUeNq8lNtqAjEQhjfr1hNCr3vZV+gbCCJY6oXg+z+A0lbrWWPTGf0HZtNpTSh04CcxiV/mlHUhhOK/zZEqUoAqrP0J0uVRTK0nX8AHmhZE/472mha4VPMGqZMZWY/0CY6zoDxvk56cu+4nFPEVZ86kOwGXP+Q0yaJLO4i2BmurIrzo/Flm5PcBjAvMwfWD3JwRvj7/SJqRtqVVoJwHAWA/rv63AuWCOUrSEZ1QKxQTxxqcYWuAvUCZvsfGOuv5XR0YcB4BPQuUJzvSgvuO9Jzp7Rb/9+iCC5QnJ3i5gCa3wNgfkT4QqY9fVECi+cCc9EaaJni8gvYSehG9HknDO9ZTXhY7sYFDwYJKGlboXd4bkrf3NLYi2A753+gCWdAiyq94e8AnThuHuwTUay+LXz6yFbzrYYwv97is1p+3oE6loDTOBfS3R+g1T78EGABoDL2O9rWNwgAAAABJRU5ErkJggg==') 6 6, default",
+				grabbing: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOFJREFUeNrslDEOwjAMRTGq0ompTEywcBsO0YkDcwCYOtGpLPESXPFThUASV7AgYemrUWO//rhuyTm3+HbQH/qDUCIK9/wGZdZP4VkpqJsS5F5qHcPV0OQR8QDUUAlqRBvRWdNvLbQRXcMkBbQWcQ7q5kwEatai3tctPxqdB/AAp1PE0LGfu2i0ZkcMXYm2orYExn4ruolsDhrGUeF4EHW4JqHj5gWJrDhpD3HpM/VzusfVZIAnmOBwBKs3yQynBj1uElCLfr6cqEoUMJx08UuInNq5fynvtM44HUKnnnUXYADcMYKw5+rWOgAAAABJRU5ErkJggg==') 6 6, default"
+			},
 			scrollBarHide   : true,
 			scrollX         : false
 		}, option);
 
+		_borderRadius = (this.option.scrollBarWidth + this.option.scrollBarBorder * 2) / 2 + "px";
+
 		this.$elm = elm;
 		this.$outer = $("<div class='scrollOuter'></div>");
 		this.$bar = $("<div class='scrollbar'></div>").css({
+			border: "solid #eee " + this.option.scrollBarBorder + "px",
 			position: "absolute",
-			borderRadius: this.option.scrollBarWidth/2 + "px",
-			WebKitBorderRadius: this.option.scrollBarWidth/2 + "px",
-			MozBorderRadius: this.option.scrollBarWidth/2 + "px",
-			MsBorderRadius: this.option.scrollBarWidth/2 + "px",
-			cursor: "move",
+			borderRadius: _borderRadius,
+			WebKitBorderRadius: _borderRadius,
+			MozBorderRadius: _borderRadius,
+			MsBorderRadius: _borderRadius,
+			cursor: this.option.cursor.grab,
 			backgroundColor: this.option.scrollBarColor
 		}).hide();
 		this.$images = $("img", elm);
@@ -109,7 +124,6 @@
 			this.eventBind();
 		// Mobile init
 		} else {
-			console.log("mobile");
 			this.evnetBindMobile();
 		}
 	};
@@ -334,6 +348,9 @@
 				_this.scrolling = false;
 				_this.settingUpScroll(e);
 
+				$html.css("cursor", _opt.cursor.grabbing);
+				$bar.css("cursor", _opt.cursor.grabbing);
+
 				$document
 					.bind(_this.mousemove, function(e) {
 						if ( _this.dragging ) {
@@ -347,6 +364,8 @@
 						_this.dragging = false;
 						_this.setUp = false;
 						$document.unbind(_this.mousemove, _this.mouseup);
+						$html.css("cursor", "default");
+						$bar.css("cursor", _opt.cursor.grab);
 						if ( !_this.enteringCursor ) {
 							$bar.fadeOut(_opt.outSpeed);
 						}
@@ -411,15 +430,11 @@
 		},
 		evnetBindMobile: function() {
 			var _this = this,
-				_barTop = undefined,
-				_barLeft = undefined,
 				_opt = this.option,
-				$elm = this.$elm,
 				$bar = this.$bar,
-				$images = this.$images,
+				$barX = this.$barX ? this.$barX : undefined,
 				$outer = this.$outer,
 				outer = $outer.get(0),
-				$barX = this.$barX ? this.$barX : undefined,
 				touching = false,
 				touchStartPos = undefined,
 				touchEndPosPrev = undefined,
@@ -430,66 +445,61 @@
 					a = $(this).get(0);
 
 				a.addEventListener("touchend", function(e) {
-					$bar.fadeOut(_opt.outSpeed);
+					$bar.stop(true, true).hide();
 					$this.click();
 					e.stopPropagation();
 				}, true);
 			});
 			outer.addEventListener("touchstart", function(e) {
-				console.log("touch start");
 				var _t = e.touches[0];
 				_this.enteringCursor = true;
 				touchStartPos = {
 					x: _t.pageX,
 					y: _t.pageY
-				}
-
-				$bar.stop(true, true).fadeIn(_opt.inSpeed);
-
+				};
 				touching = true;
-				//console.log("pageX: " + _t.pageX + ", pageY: " + _t.pageY);
-				//e.stopPropagation();
+				e.stopPropagation();
 				//e.preventDefault();
 			}, false);
 			outer.addEventListener("touchmove", function(e) {
 				var _t = e.touches[0];
-
 				touchEndPosPrev = touchEndPos || touchStartPos;
-				console.log("touchEndPrev: " + touchEndPosPrev.y)
 				touchEndPos = {
 					x: _t.pageX,
 					y: _t.pageY
 				};
-				console.log("touchEnd: " + touchEndPos.y)
-
-				var _diffY = touchEndPosPrev.y - touchEndPos.y,
+				var _diffY = (touchEndPosPrev.y - touchEndPos.y) * (4 / 5),
+					_diffX = (touchEndPosPrev.x - touchEndPos.x) * (4 / 5),
+					// 移動距離が気持ち短い方がなめらかにみえる
 					_barTop = parseInt($bar.css("top"), 10) + _diffY,
-					_barLeft;
+					_barLeft = parseInt($barX.css("left"), 10) + _diffX;
 
-				//console.log(_diffY)
-
-				//if ( !_opt.scrollX ) {
-					if ( !_this.setUp ) _this.settingUpScroll();
-					_this.innerScrolling(_barTop);
-				//} else {
-				//	_barLeft = parseInt($barX.css("left"), 10) - _delta;
-				//	if ( !_this.setUpX ) _this.settingUpScrollX();
-				//	_this.innerScrollingX(_barLeft);
-				//}
-
-				//console.log("pageX: " + _t.pageX + ", pageY: " + _t.pageY);
+				// Y scrolling
+				if ( !_this.setUp ) {
+					$bar.stop(true, true).fadeIn(_opt.inSpeed);
+					_this.settingUpScroll();
+				}
+				// X scrolling
+				_this.innerScrolling(_barTop);
+				if ( $barX ) {
+					if ( !_this.setUpX ) {
+						$barX.stop(true, true).fadeIn(_opt.inSpeed);
+						_this.settingUpScrollX();
+					}
+					_this.innerScrollingX(_barLeft);
+				}
 				e.preventDefault();
 			}, false);
 			outer.addEventListener("touchend", function(e) {
-				console.log("touch end");
 				touching = false;
-				var _t = e.touches[0];
+				touchStartPos = touchEndPos = 0;
 
 				_this.enteringCursor = false;
 				_this.setUp = false;
+				_this.setUpX = false;
 				_this.scrolling = false;
 				$bar.fadeOut(_opt.outSpeed);
-				
+				if ( $barX ) $barX.fadeOut(_opt.outSpeed);
 				e.preventDefault();
 			}, false);
 		}
