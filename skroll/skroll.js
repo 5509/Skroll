@@ -23,7 +23,7 @@
 		}, option);
 
 		// Syncオプションが有効なときはスクロールを同期する
-		if ( option.sync ) {
+		if ( option.sync || this.length === 1 ) {
 			new Skroll(this, option);
 		// 無効時はそれぞれスクロールを有効にする
 		} else {
@@ -49,8 +49,8 @@
 			inSpeed         : 150,
 			outSpeed        : 300,
 			delayTime       : 200,
-			scrollBarWidth  : 10,
-			scrollBarHeight : 10,
+			scrollBarWidth  : 8,
+			scrollBarHeight : 8,
 			scrollBarSpace  : 0,
 			scrollBarColor  : "#000",
 			opacity         : .5,
@@ -104,7 +104,14 @@
 			this.$barX = this.$bar.clone();
 		}
 		// Init
-		this.init();
+		this.setUpScroll();
+		if ( !mobile ) {
+			this.eventBind();
+		// Mobile init
+		} else {
+			console.log("mobile");
+			this.evnetBindMobile();
+		}
 	};
 	Skroll.prototype = {
 		settingUpScroll: function(e) {
@@ -195,10 +202,8 @@
 				});
 			}
 		},
-		init: function() {
+		setUpScroll: function() {
 			var _this = this,
-				_barTop = undefined,
-				_barLeft = undefined,
 				_opt = this.option,
 				$elm = this.$elm,
 				$bar = this.$bar,
@@ -206,55 +211,7 @@
 				$outer = this.$outer,
 				$barX = this.$barX ? this.$barX : undefined;
 
-			$outer
-				.bind("mouseover", function() {
-					_this.enteringCursor = true;
-					$bar.stop(true, true).fadeIn(_opt.inSpeed);
-
-					if ( !$barX ) return;
-					$barX.stop(true, true).fadeIn(_opt.inSpeed);
-				})
-				.bind("mouseleave", function() {
-					_this.enteringCursor = false;
-					if ( _this.dragging || _this.draggingX ) {
-						return false;
-					}
-					_this.setUp = false;
-					_this.scrolling = false;
-					if ( _opt.scrollBarHide ) {
-						$bar.fadeOut(_opt.outSpeed);
-						
-						if ( !$barX) return;
-						$barX.fadeOut(_opt.outSpeed);
-					}
-				})
-				.bind(mousewheel, function(e) {
-//					console.log(e);
-					// detailはwheelDeltaと正負が逆になり
-					// 値もwheelDeltaの1/10
-					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
-						_barTop = parseInt($bar.css("top"), 10) - _delta,
-						_barLeft;
-
-					console.log("delta: " + _delta);
-					console.log(e);
-					//console.log("Y: " + e.clientY);
-					//console.log("X: " + e.clientX);
-
-					if ( !_opt.scrollX ) {
-						if ( !_this.setUp ) _this.settingUpScroll();
-						_this.innerScrolling(_barTop);
-					} else {
-						_barLeft = parseInt($barX.css("left"), 10) - _delta;
-						if ( !_this.setUpX ) _this.settingUpScrollX();
-						_this.innerScrollingX(_barLeft);
-					}
-					e.preventDefault();
-					// MacのTrackpadとマウスのホイール横スクロールは
-					// イベントでは取れないかも
-				});
-
-			$elm
+			this.$outer = $elm
 				.css({
 					margin   : 0,
 					width    : _this.sideScroll ?
@@ -273,7 +230,8 @@
 							width         : parseInt(_opt.width,  10) - _opt.scrollBarSpace,
 							height        : parseInt(_opt.height, 10),
 							position      : "relative",
-							overflow      : "hidden"
+							overflow      : "hidden",
+							outline       : "none"
 						})
 				)
 				.parent()
@@ -316,6 +274,57 @@
 					setTimeout(arguments.callee, 30);
 				}());
 			}
+		},
+		eventBind: function() {
+			var _this = this,
+				_barTop = undefined,
+				_barLeft = undefined,
+				_opt = this.option,
+				$bar = this.$bar,
+				$barX = this.$barX ? this.$barX : undefined,
+				$outer = this.$outer;
+
+			$outer
+				.bind("mouseover", function() {
+					_this.enteringCursor = true;
+					$bar.stop(true, true).fadeIn(_opt.inSpeed);
+
+					if ( !$barX ) return;
+					$barX.stop(true, true).fadeIn(_opt.inSpeed);
+				})
+				.bind("mouseleave", function() {
+					_this.enteringCursor = false;
+					if ( _this.dragging || _this.draggingX ) {
+						return false;
+					}
+					_this.setUp = false;
+					_this.scrolling = false;
+					if ( _opt.scrollBarHide ) {
+						$bar.fadeOut(_opt.outSpeed);
+
+						if ( !$barX) return;
+						$barX.fadeOut(_opt.outSpeed);
+					}
+				})
+				.bind(mousewheel, function(e) {
+					// detailはwheelDeltaと正負が逆になり
+					// 値もwheelDeltaの1/10
+					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
+						_barTop = parseInt($bar.css("top"), 10) - _delta,
+						_barLeft;
+
+					if ( !_opt.scrollX ) {
+						if ( !_this.setUp ) _this.settingUpScroll();
+						_this.innerScrolling(_barTop);
+					} else {
+						_barLeft = parseInt($barX.css("left"), 10) - _delta;
+						if ( !_this.setUpX ) _this.settingUpScrollX();
+						_this.innerScrollingX(_barLeft);
+					}
+					e.preventDefault();
+					// MacのTrackpadとマウスのホイール横スクロールは
+					// イベントでは取れないかも
+				});
 
 			$bar.bind(_this.mousedown, function(e) {
 				_barTop = parseInt($bar.css("top"), 10);
@@ -377,7 +386,7 @@
 
 			// 他のコンテンツもロードが終わってから
 			// スクロールバーをチラ見せする
-			$(window).load(function() {
+			$(window).one("load", function() {
 				if ( mobile ) {
 					$bar.fadeIn(_opt.inSpeed);
 				} else {
@@ -399,6 +408,90 @@
 					}
 				}
 			});
+		},
+		evnetBindMobile: function() {
+			var _this = this,
+				_barTop = undefined,
+				_barLeft = undefined,
+				_opt = this.option,
+				$elm = this.$elm,
+				$bar = this.$bar,
+				$images = this.$images,
+				$outer = this.$outer,
+				outer = $outer.get(0),
+				$barX = this.$barX ? this.$barX : undefined,
+				touching = false,
+				touchStartPos = undefined,
+				touchEndPosPrev = undefined,
+				touchEndPos = undefined;
+
+			$("a", $outer).each(function() {
+				var $this = $(this),
+					a = $(this).get(0);
+
+				a.addEventListener("touchend", function(e) {
+					$bar.fadeOut(_opt.outSpeed);
+					$this.click();
+					e.stopPropagation();
+				}, true);
+			});
+			outer.addEventListener("touchstart", function(e) {
+				console.log("touch start");
+				var _t = e.touches[0];
+				_this.enteringCursor = true;
+				touchStartPos = {
+					x: _t.pageX,
+					y: _t.pageY
+				}
+
+				$bar.stop(true, true).fadeIn(_opt.inSpeed);
+
+				touching = true;
+				//console.log("pageX: " + _t.pageX + ", pageY: " + _t.pageY);
+				//e.stopPropagation();
+				//e.preventDefault();
+			}, false);
+			outer.addEventListener("touchmove", function(e) {
+				var _t = e.touches[0];
+
+				touchEndPosPrev = touchEndPos || touchStartPos;
+				console.log("touchEndPrev: " + touchEndPosPrev.y)
+				touchEndPos = {
+					x: _t.pageX,
+					y: _t.pageY
+				};
+				console.log("touchEnd: " + touchEndPos.y)
+
+				var _diffY = touchEndPosPrev.y - touchEndPos.y,
+					_barTop = parseInt($bar.css("top"), 10) + _diffY,
+					_barLeft;
+
+				//console.log(_diffY)
+
+				//if ( !_opt.scrollX ) {
+					if ( !_this.setUp ) _this.settingUpScroll();
+					_this.innerScrolling(_barTop);
+				//} else {
+				//	_barLeft = parseInt($barX.css("left"), 10) - _delta;
+				//	if ( !_this.setUpX ) _this.settingUpScrollX();
+				//	_this.innerScrollingX(_barLeft);
+				//}
+
+				//console.log("pageX: " + _t.pageX + ", pageY: " + _t.pageY);
+				e.preventDefault();
+			}, false);
+			outer.addEventListener("touchend", function(e) {
+				console.log("touch end");
+				touching = false;
+				var _t = e.touches[0];
+
+				_this.enteringCursor = false;
+				_this.setUp = false;
+				_this.scrolling = false;
+				$bar.fadeOut(_opt.outSpeed);
+				
+				e.preventDefault();
+			}, false);
 		}
 	};
 

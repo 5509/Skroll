@@ -90,10 +90,10 @@ div.pagebody {
 
 div.pagebody div.txt {
 	margin: 2em auto 0;
-	width: 400px;
+	width: 300px;
 	height: 300px;
 	xposition: relative; /* これはJSで追加する */
-	overflow: hidden; /* これはJSで追加する */
+	overflow: scroll; /* これはJSで追加する */
 }
 div.pagebody div.txt p {
 	padding-bottom: 1em;
