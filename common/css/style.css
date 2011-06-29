@@ -22,7 +22,7 @@ body {
 	height: 100%;
 	color: #252525;
 	background: url(../images/bg_glow.png) repeat;
-	font-family: Helvetica;
+	font-family: sans-serif;
 }
 
 p.note {
@@ -73,7 +73,6 @@ div.pagebody {
 	padding: 15px;
 	width: 600px;
 	background: #fafafa;
-	text-shadow: white 0 1px 0;
 	background: url(../images/dots.png) repeat-x,
 				-webkit-gradient(radial, center top, 300, center top, 0, from(hsla(0,0%,100%,0)), to(hsla(0,0%,100%,.7))),
 				-webkit-gradient(linear, left top, left 200, from(hsla(0,0%,100%,.2)), to(hsla(0,0%,100%,0)));
