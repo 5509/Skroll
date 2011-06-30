@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.41
+ * @version      0.42
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-06-29 15:49
+ * 2011-06-30 11:44
  */
 /*
  * MEMO:
@@ -22,10 +22,12 @@
  */
 ;(function($, window, document, undefined) {
 
-	// Global
+	// CONST
 	var MOBILE = "ontouchstart" in window,
 		MOUSEWHEEL = "onmousewheel" in window ? "mousewheel" : "DOMMouseScroll",
 		MATRIX = "matrix(1, 0, 0, 1, 0, 0)",
+		SCROLLBASE = 1,
+		SCROLLCANCELDURATION = 40,
 		$document = $(document),
 		$html = $("html");
 
@@ -37,7 +39,7 @@
 			width           : parseInt(this.css("width"), 10),
 			height          : parseInt(this.css("height"), 10),
 			inSpeed         : 50,
-			outSpeed        : 450,
+			outSpeed        : 200,
 			delayTime       : 200,
 			scrollBarBorder : 1,
 			scrollBarWidth  : 8,
@@ -68,7 +70,7 @@
 	// Skroll
 	var Skroll = function(elm, option) {
 		var _borderRadius = (option.scrollBarWidth + option.scrollBarBorder * 2) / 2 + "px";
-		
+
 		// Option
 		this.option = option;
 		this.$elm = elm;
@@ -136,11 +138,10 @@
 						.split(" ");
 
 				return {
-					x: _translate[4] * 1,
-					y: _translate[5] * 1
+					x: parseInt(_translate[4], 10),
+					y: parseInt(_translate[5], 10)
 				}
 			} else {
-				//console.log("get position");
 				return {
 					x: parseInt($el.css("left"), 10),
 					y: parseInt($el.css("top"),  10)
@@ -286,7 +287,7 @@
 					$bar
 						.css({
 							width   : _opt.scrollBarWidth,
-							height  : Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight,
+							height  : Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2,
 							top     : 0,
 							right   : 0,
 							opacity : _opt.opacity
@@ -479,11 +480,13 @@
 				touchEndPos = undefined,
 				acceleration = undefined,
 				touchStartTime = undefined,
+				touchEndPPTime = undefined, // 不要かも
+				touchMoveEnd = undefined,
 				touchEndTime = undefined,
 				touchSpeed = 0,
 				transitionSetUp = {
 					WebkitTransitionProperty       : "all",
-					WebkitTransitionTimingFunction : "ease",//"cubic-bezier(0.33,0.66,0.66,1)",
+					WebkitTransitionTimingFunction : "cubic-bezier(0.33,0.66,0.66,1)",
 					WebkitTransformStyle           : "preserve-3d",
 					WebkitTransitionDuration       : "0s",
 					WebkitTransformOrigin          : "0 0"
@@ -526,6 +529,8 @@
 					x: _t.pageX,
 					y: _t.pageY
 				};
+				touchMoveEnd = +new Date;
+
 				var _diffY = (touchEndPosPrev.y - touchEndPos.y) * (2 / 5),
 					_diffX = (touchEndPosPrev.x - touchEndPos.x) * (2 / 5),
 					// 移動距離が気持ち短い方がなめらかにみえる
@@ -566,44 +571,49 @@
 					_barDiff = _this.outerHeight - _this.scrollBarHeight,
 					_maxInnerTop = -_barDiff * _this.innerScrollVal,
 					_barCurrent = _this.getCurrent($bar);
-
+				
 				touchEndTime = +new Date;
-				acceleration = touchEndTime - touchStartTime; // 加速度として使う
-				// _diffY * a = 進む距離
 
-				if ( _barCurrent.y >= 0 || _barCurrent.y >= -_barDiff ) {
+				// ひとつ手前のtouchEndPosとの差があまりない場合のみ
+				// モーメンタムスクロール
+				if ( touchEndTime - touchMoveEnd < SCROLLCANCELDURATION ) {
+					// スクロールする余裕がある場合
+					if ( _barCurrent.y >= 0 || _barCurrent.y >= -_barDiff ) {
+						acceleration = touchEndTime - touchStartTime; // 加速度として使う
+						// _diffY * a = 進む距離
 
-					_stepY = -_diffY * acceleration / 250; // 慣性でバーが進む距離
-					_stepX = -_diffX * acceleration / 250; // 慣性でバーが進む距離
-					_nextY = _barCurrent.y + _stepY;
-					_nextInnerY = -_nextY * _this.innerScrollVal;
+						_stepY = -_diffY * acceleration / 250; // 慣性でバーが進む距離
+						_stepX = -_diffX * acceleration / 250; // 慣性でバーが進む距離
+						_nextY = _barCurrent.y + _stepY;
+						_nextInnerY = -_nextY * _this.innerScrollVal;
 
-//					$elm.css("WebkitTransitionDuration", ".35s");
-//					$bar.css("WebkitTransitionDuration", ".35s");
-					_this.css([$elm, $bar], {WebkitTrasitionDuration: ".35s"});
+						// スクロール速度はタッチしていた時間による
+						_this.css([$elm, $bar], {WebkitTransitionDuration: acceleration / 400 + "s"});
 
-					_this.setNext($elm, {
-						y: _nextInnerY >= 0
-							? 0 : _nextInnerY <= _maxInnerTop
-								? _maxInnerTop : _nextInnerY
-					});
-					_this.setNext($bar, {
-						y: _nextY <= 0
-							? 0 : _nextY >= _barDiff
-								? _barDiff : _nextY
-					});
-					setTimeout(function() {
-//						$bar.css("WebkitTransitionDuration", "0");
-//						$elm.css("WebkitTransitionDuration", "0");
-						_this.css([$elm, $bar], {WebkitTrasitionDuration: "0s"});
-//						$elm.css("WebkitTransitionProperty", "bottom");
-//						$elm.css("WebkitTransitionProperty", "bottom");
+						_this.setNext($elm, {
+							y: _nextInnerY >= 0
+								? 0 : _nextInnerY <= _maxInnerTop
+									? _maxInnerTop : _nextInnerY
+						});
+						_this.setNext($bar, {
+							y: _nextY <= 0
+								? 0 : _nextY >= _barDiff
+									? _barDiff : _nextY
+						});
+						setTimeout(function() {
+	//						$bar.css("WebkitTransitionDuration", "0");
+	//						$elm.css("WebkitTransitionDuration", "0");
+							_this.css([$elm, $bar], {WebkitTransitionDuration: "0s"});
+	//						$elm.css("WebkitTransitionProperty", "bottom");
+	//						$elm.css("WebkitTransitionProperty", "bottom");
 
-						//$bar.delay(150).fadeOut(_opt.outSpeed);
-					}, 300);
-				} else {
-					//$bar.fadeOut(_opt.outSpeed);
-					//if ( $barX ) $barX.fadeOut(_opt.outSpeed);
+							//$bar.delay(150).fadeOut(_opt.outSpeed);
+						}, 300);
+					// すでに最大値までスクロールされている場合
+					} else {
+						//$bar.fadeOut(_opt.outSpeed);
+						//if ( $barX ) $barX.fadeOut(_opt.outSpeed);
+					}
 				}
 
 				touching = false;
