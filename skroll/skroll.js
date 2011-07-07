@@ -16,7 +16,7 @@
  *
  * TODO:
  * IEの対応（主に7以下
- * mobile慣性スクロールの対応どうするのか
+ * mobile慣性スクロールの対応どうするのか - done
  * Androidのtouchmove対応が微妙っぽい
  * overflow: scrollが使えるらしいiOS5の対応をどうするのか
  */
@@ -25,9 +25,12 @@
 	// CONST
 	var MOBILE = "ontouchstart" in window,
 		MOUSEWHEEL = "onmousewheel" in window ? "mousewheel" : "DOMMouseScroll",
-		MATRIX = "matrix(1, 0, 0, 1, 0, 0)",
+		MATRIX = "matrix(1,0,0,1,0,0)",
+		CUBICBEZIER = "cubic-bezier(0,1,0.73,0.95)",
+		CUBICBEZIERBOUNCE = "cubic-bezier(0.11,0.74,0.15,0.80)",
 		SCROLLBASE = 1,
-		SCROLLCANCELDURATION = 40,
+		SCROLLBOUNCECAPACITY = 0,
+		SCROLLCANCELDURATION = 60,
 		$document = $(document),
 		$html = $("html");
 
@@ -42,9 +45,9 @@
 			outSpeed        : 200,
 			delayTime       : 200,
 			scrollBarBorder : 1,
-			scrollBarWidth  : 8,
-			scrollBarHeight : 8,
-			scrollBarSpace  : 0,
+			scrollBarWidth  : 4,
+			scrollBarHeight : 4,
+			scrollBarSpace  : 4,
 			scrollBarColor  : "#000",
 			opacity         : .5,
 			cursor          : {
@@ -76,7 +79,7 @@
 		this.$elm = elm;
 		this.$outer = $("<div class='scrollOuter'></div>");
 		this.$bar = $("<div class='scrollbar'></div>").css({
-			border             : "solid #eee " + this.option.scrollBarBorder + "px",
+			//border             : "solid #eee " + this.option.scrollBarBorder + "px",
 			position           : "absolute",
 			borderRadius       : _borderRadius,
 			WebKitBorderRadius : _borderRadius,
@@ -84,10 +87,16 @@
 			MsBorderRadius     : _borderRadius,
 			cursor             : this.option.cursor.grab,
 			backgroundColor    : this.option.scrollBarColor,
-			WebkitTransform    : MATRIX
+			WebkitTransform    : MATRIX,
+			boxShadow          : "0 0 2px #fff",
+			MozBoxShadow       : "0 0 2px #fff",
+			WebkitBoxShadow    : "0 0 2px #fff"
 		}).hide();
 		this.$images = $("img", elm);
+		this.scrollingBase = { x: 0, y: 0 };
+		// 値を保持しておくためのやつ
 		this.enteringCursor = false;
+		this.transitioning = false;
 		this.dragging = false;
 		this.draggingX = false;
 		this.scrolling = false;
@@ -132,14 +141,13 @@
 	Skroll.prototype = {
 		getCurrent: function($el) {
 			if ( MOBILE ) {
-				var _translate =  $el.css("WebkitTransform")
+				var _matrix =  $el.css("WebkitTransform")
 						.replace(/matrix\(([^\(\)]*)\)/, "$1")
-						.replace(/,/g, "")
-						.split(" ");
+						.split(",");
 
 				return {
-					x: parseInt(_translate[4], 10),
-					y: parseInt(_translate[5], 10)
+					x: parseInt(_matrix[4], 10),
+					y: parseInt(_matrix[5], 10)
 				}
 			} else {
 				return {
@@ -148,15 +156,22 @@
 				}
 			}
 		},
-		setNext: function($el, val) { // x, y
-			var _defaultVal;
+		// for Transition
+		setNext: function($el, val) { // val: {x: valX, y: valY}
+			var _defaultVal = { x: 0, y: 0 };
+			if ( val.y === 0 ) {
+				val.y = "0";
+			}
+			if ( val.x === 0 ) {
+				val.x = "0";
+			}
 			if ( !val.x || !val.y ) {
 				_defaultVal = this.getCurrent($el);
 			}
+			val.x = 0;
 			if ( MOBILE ) {
 				$el.css({
-					bottom          : val.y || _defaultVal.y,
-					WebkitTransform : "matrix(1, 0, 0, 1, " + (val.x || _defaultVal.x) + ", " + (val.y || _defaultVal.y) + ")"
+					WebkitTransform : "matrix(1,0,0,1," + (val.x || _defaultVal.x) + "," + (val.y || _defaultVal.y) + ")"
 				});
 			} else {
 				$el.css({
@@ -177,7 +192,7 @@
 			}
 			_this.outerHeight = $outer.height();
 			_this.diff = _this.innerHeight - _this.outerHeight;
-			_this.scrollBarHeight = $bar.get(0).offsetHeight;
+			console.log(_this.scrollBarHeight);
 			_this.innerScrollVal = _this.diff / (_this.outerHeight - _this.scrollBarHeight);
 			_this.dragTop = e ? e.clientY : 0;
 			_this.scrolling = _this.dragging ? false : true;
@@ -199,26 +214,29 @@
 			_this.dragLeft = e ? e.clientX : 0;
 			_this.scrolling = _this.draggingX ? false : true;
 		},
-		innerScrolling: function(_barTop) {
+		innerScrolling: function() {
 			var _this = this,
-				_innerTop = _barTop * _this.innerScrollVal,
+				_current = this.scrollingBase,
+				_innerTop = _current.y * _this.innerScrollVal,
+				_barDiff = _this.outerHeight - _this.scrollBarHeight,
 				// ↑インナーのトップ位置
-				_innerScrolling = _barTop >= _this.outerHeight - _this.scrollBarHeight,
+				_innerScrolling = _current.y >= _barDiff,
 				// ↑ドラッグがスクロール許容量を超えてしまったときにtrue
-				_maxInnerTop = -(_this.outerHeight - _this.scrollBarHeight) * _this.innerScrollVal,
+				_maxInnerTop = -_barDiff * _this.innerScrollVal,
 				// ↑インナーの最大トップ位置
 				$bar = _this.$bar,
 				$elm = _this.$elm;
 
-			_this.setNext($bar, {
-				y: _barTop <= 0
+			_current.y = _current.y <= 0
 					? 0 : _innerScrolling
-						? _this.outerHeight - _this.scrollBarHeight : _barTop
+						? _barDiff : _current.y;
+
+			_this.setNext($bar, {
+				y: _current.y <= 0 ? 0 : _current.y
 			});
 			_this.setNext($elm, {
 				y: !_innerScrolling
-					? _innerTop <= 0
-						? 0 : -_innerTop : _maxInnerTop
+					? -_innerTop : _maxInnerTop
 			});
 		},
 		innerScrollingX: function(_barLeft) {
@@ -255,14 +273,16 @@
 				$bar = this.$bar,
 				$images = this.$images,
 				$outer = this.$outer,
-				$barX = this.$barX ? this.$barX : undefined;
+				$barX = this.$barX ? this.$barX : undefined,
+				_elmWidth = parseInt($elm.css("width"), 10),
+				_barHeight = Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2;
 
 			this.$outer = $elm
 				.css({
 					margin          : 0,
 					width           : _this.sideScroll ?
-										parseInt($elm.css("width"), 10)
-										: parseInt($elm.css("width"), 10) - _opt.scrollBarSpace,
+										_elmWidth
+										: _elmWidth - _opt.scrollBarSpace,
 					height          : "auto",
 					overflow        : "auto",
 					position        : MOBILE ? "static" : "relative",
@@ -287,7 +307,7 @@
 					$bar
 						.css({
 							width   : _opt.scrollBarWidth,
-							height  : Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2,
+							height  : _barHeight,
 							top     : 0,
 							right   : 0,
 							opacity : _opt.opacity
@@ -304,6 +324,8 @@
 						})
 					: undefined
 				);
+
+			_this.scrollBarHeight = _barHeight;
 
 			// 画像がある場合は画像の読み込み完了を待つ
 			if ( $images.length ) {
@@ -363,16 +385,17 @@
 					// detailはwheelDeltaと正負が逆になり
 					// 値もwheelDeltaの1/10
 					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
-						_barTop = _this.getCurrent($bar).y - _delta,
-						_barLeft;
+						_current = _this.scrollingBase;
+
+					_current.y = _this.scrollingBase.y - _delta;
 
 					if ( !_opt.scrollX ) {
 						if ( !_this.setUp ) _this.setUpScrolling();
-						_this.innerScrolling(_barTop);
+						_this.innerScrolling(_current.y);
 					} else {
-						_barLeft = _this.getCurrent($bar).x - _delta;
+						_current.x = _current.x - _delta;
 						if ( !_this.setUpX ) _this.setUpScrollingX();
-						_this.innerScrollingX(_barLeft);
+						_this.innerScrollingX(_current.x);
 					}
 					e.preventDefault();
 					// MacのTrackpadとマウスのホイール横スクロールは
@@ -380,7 +403,8 @@
 				});
 
 			$bar.bind(_this.mousedown, function(e) {
-				_barTop = parseInt($bar.css("top"), 10);
+				var _current = _this.scrollingBase;
+
 				this.dragTop = e.clientY;
 				_this.setUp = false;
 				_this.dragging = true;
@@ -392,9 +416,9 @@
 				$document
 					.bind(_this.mousemove, function(e) {
 						if ( _this.dragging ) {
-							_barTop = _barTop + (e.clientY - _this.dragTop);
+							_current.y = _current.y + (e.clientY - _this.dragTop);
 							_this.dragTop = e.clientY;
-							_this.innerScrolling(_barTop);
+							_this.innerScrolling();
 						}
 						return false;
 					})
@@ -480,20 +504,61 @@
 				touchEndPos = undefined,
 				acceleration = undefined,
 				touchStartTime = undefined,
-				touchEndPPTime = undefined, // 不要かも
-				touchMoveEnd = undefined,
+				touchMoveEndTime = undefined,
 				touchEndTime = undefined,
 				touchSpeed = 0,
 				transitionSetUp = {
 					WebkitTransitionProperty       : "all",
-					WebkitTransitionTimingFunction : "cubic-bezier(0.33,0.66,0.66,1)",
-					WebkitTransformStyle           : "preserve-3d",
-					WebkitTransitionDuration       : "0s",
-					WebkitTransformOrigin          : "0 0"
+					WebkitTransitionTimingFunction : CUBICBEZIER,
+					WebkitTransformStyle           : "preserve-3d", // GPUレンダリングをONにしておく
+					WebkitTransitionDuration       : "0s"
+				},
+				transioningFunc = function(callback) {
+					_this.transitioning = true;
+					(function() {
+						if ( !_this.transitioning ) return;
+						callback();
+						setTimeout(arguments.callee, 10);
+					}());
+				},
+				bounce = function() {
+					var _barDiff = _this.outerHeight - _this.scrollBarHeight,
+						_barDiffX = _this.outerWidth - _this.scrollBarWidth,
+						_maxInnerTop = -_barDiff * _this.innerScrollVal,
+						_maxInnerLeft = -_barDiffX * _this.innerScrollValX,
+						_current = _this.scrollingBase;//_this.getCurrent($bar);
+
+					// 範囲を超えた場合のボイン戻し
+					if ( _current.y > _barDiff ) {
+						_this.css([$elm, $bar], {
+							WebkitTransitionDuration       : "0.4s",
+							WebkitTransitionTimingFunction : CUBICBEZIERBOUNCE
+						});
+						_this.setNext($bar, {
+							y: _barDiff
+						});
+						_this.setNext($elm, {
+							y: _maxInnerTop
+						});
+					} else
+					if ( 0 > _current.y ) {
+						_this.css([$elm, $bar], {
+							WebkitTransitionDuration       : "0.4s",
+							WebkitTransitionTimingFunction : CUBICBEZIERBOUNCE
+						});
+						$bar.css("height", _this.scrollBarHeight);
+						_this.setNext($elm, {
+							y: 0
+						});
+					} else {
+						_this.css([$elm, $bar], {
+							WebkitTransitionDuration       : "0s",
+							WebkitTransitionTimingFunction : CUBICBEZIER
+						});
+					}
+					$bar.css("height", _this.scrollBarHeight);
 				};
 
-//			$bar.css(transitionSetUp);
-//			$elm.css(transitionSetUp);
 			_this.css([$bar, $elm], transitionSetUp);
 
 			$("a", $outer).each(function() {
@@ -501,14 +566,35 @@
 					anchor = $this.get(0);
 
 				anchor.addEventListener("touchend", function(e) {
-					$bar.stop(true, true).hide();
+					//$bar.stop(true, true).hide();
 					$this.click();
 					e.stopPropagation();
 				}, true);
 			});
 			outer.addEventListener("touchstart", function(e) {
-				var _t = e.touches[0];
+				var _t = e.touches[0],
+					_current = this.scrollingBase,
+					_nextInnerX = undefined,
+					_nextInnerY = undefined;
 
+//				if ( this.scrolling ) {
+//					_nextInnerY = -_current.y * _this.innerScrollVal;
+//					_nextInnerX = -_current.x * _this.innerScrollValX;
+//
+//					_this.setNext($elm, {
+//						y: _nextInnerY,
+//						x: _nextInnerX
+//					});
+//
+				_this.css([$elm, $bar], {
+					WebkitTransitionDuration       : "0s",
+					WebkitTransitionTimingFunction : CUBICBEZIER
+				});
+				$bar.css("height", _this.scrollBarHeight);
+				this.scrolling = false;
+//				}
+
+				// touchstart時のタイムスタンプ
 				touchStartTime = +new Date;
 				touching = true;
 				touchSpeed = 0;
@@ -522,21 +608,25 @@
 				//e.preventDefault();
 			}, false);
 			outer.addEventListener("touchmove", function(e) {
-				var _t = e.touches[0];
+				var _t = e.touches[0],
+					_diffY, _diffX,
+					_barCurrent = _this.getCurrent($bar),
+					_barTop, _barLeft,
+					_current = _this.scrollingBase;
 
 				touchEndPosPrev = touchEndPos || touchStartPos;
 				touchEndPos = {
 					x: _t.pageX,
 					y: _t.pageY
 				};
-				touchMoveEnd = +new Date;
+				// 最後にtouchmoveしたタイムスタンプ
+				touchMoveEndTime = +new Date;
 
-				var _diffY = (touchEndPosPrev.y - touchEndPos.y) * (2 / 5),
-					_diffX = (touchEndPosPrev.x - touchEndPos.x) * (2 / 5),
-					// 移動距離が気持ち短い方がなめらかにみえる
-					_barCurrent = _this.getCurrent($bar),
-					_barTop = _barCurrent.y + _diffY,
-					_barLeft;
+				_diffY = (touchEndPosPrev.y - touchEndPos.y) * (2 / 5);
+				_diffX = (touchEndPosPrev.x - touchEndPos.x) * (2 / 5);
+				// 移動距離が気持ち短い方がなめらかにみえる
+				//_barTop = _barCurrent.y + _diffY;
+				_current.y = _current.y + _diffY;
 
 				// Y scrolling
 				if ( !_this.setUp ) {
@@ -544,7 +634,7 @@
 					$bar.show();
 					_this.setUpScrolling();
 				}
-				_this.innerScrolling(_barTop);
+				_this.innerScrolling();
 				// X scrolling
 				if ( $barX ) {
 					_barLeft = parseInt($barX.css("left"), 10) + _diffX;
@@ -566,55 +656,77 @@
 					_nextX = undefined, // 慣性でバーが進んだ後
 					_nextInnerY = undefined, // 慣性でインナーが進んだ後
 					_nextInnerX = undefined, // 慣性でインナーが進んだ後
-					//_scrollYDiff = _diffY / _this.innerScrollVal,
-					//_scrollXDiff = _diffX / _this.innerScrollValX,
 					_barDiff = _this.outerHeight - _this.scrollBarHeight,
+					_barDiffX = _this.outerWidth - _this.scrollBarWidth,
 					_maxInnerTop = -_barDiff * _this.innerScrollVal,
-					_barCurrent = _this.getCurrent($bar);
-				
+					_maxInnerLeft = -_barDiffX * _this.innerScrollValX,
+					_duration = undefined,
+					_current = _this.scrollingBase;//_this.getCurrent($bar);
+
+				// touchendのタイムスタンプ
 				touchEndTime = +new Date;
 
 				// ひとつ手前のtouchEndPosとの差があまりない場合のみ
 				// モーメンタムスクロール
-				if ( touchEndTime - touchMoveEnd < SCROLLCANCELDURATION ) {
+				if ( touchEndTime - touchMoveEndTime < SCROLLCANCELDURATION
+				 && (Math.abs(touchEndPosPrev.y - touchEndPos.y) > 15
+				  || Math.abs(touchEndPosPrev.x - touchEndPos.x) > 15) ) {
 					// スクロールする余裕がある場合
-					if ( _barCurrent.y >= 0 || _barCurrent.y >= -_barDiff ) {
+//					if ( _barCurrent.y >= 0 || _barCurrent.y >= -_barDiff ) {
 						acceleration = touchEndTime - touchStartTime; // 加速度として使う
 						// _diffY * a = 進む距離
 
-						_stepY = -_diffY * acceleration / 250; // 慣性でバーが進む距離
-						_stepX = -_diffX * acceleration / 250; // 慣性でバーが進む距離
-						_nextY = _barCurrent.y + _stepY;
-						_nextInnerY = -_nextY * _this.innerScrollVal;
+						// スクロールする量と速度は
+						// タッチしていた時間とタッチの距離による
+						_stepY = -_diffY / 300 * acceleration; // 慣性でバーが進む距離
+						_stepX = -_diffX / 300 * acceleration; // 慣性でバーが進む距離
+						// 現在位置の更新
+						_current.y = _current.y + _stepY;
+						_current.x = _current.x + _stepX;
+						// 現在位置からインナーの位置を決定する
+						_nextInnerY = -_current.y * _this.innerScrollVal;
+						_nextInnerX = -_current.x * _this.innerScrollValX;
 
 						// スクロール速度はタッチしていた時間による
-						_this.css([$elm, $bar], {WebkitTransitionDuration: acceleration / 400 + "s"});
+						_duration = 0.5 > acceleration / 400 ? acceleration / 400 : 0.5;
+						_this.css([$elm, $bar], {
+							WebkitTransitionDuration: _duration + "s"
+						});
 
 						_this.setNext($elm, {
-							y: _nextInnerY >= 0
-								? 0 : _nextInnerY <= _maxInnerTop
-									? _maxInnerTop : _nextInnerY
+							y: _nextInnerY,
+							x: _nextInnerX
 						});
-						_this.setNext($bar, {
-							y: _nextY <= 0
-								? 0 : _nextY >= _barDiff
-									? _barDiff : _nextY
-						});
-						setTimeout(function() {
-	//						$bar.css("WebkitTransitionDuration", "0");
-	//						$elm.css("WebkitTransitionDuration", "0");
-							_this.css([$elm, $bar], {WebkitTransitionDuration: "0s"});
-	//						$elm.css("WebkitTransitionProperty", "bottom");
-	//						$elm.css("WebkitTransitionProperty", "bottom");
 
-							//$bar.delay(150).fadeOut(_opt.outSpeed);
-						}, 300);
+						transioningFunc(function() {
+							var __current = _this.getCurrent($elm);
+							if ( __current.y > 0 ) {
+								$bar.css({
+									height: _this.scrollBarHeight * (1 - (__current.y / 100)/3)
+								});
+							}// else
+//							if ( __current.y > _barDiff ) {
+//								$bar.css({
+//									height: _this.scrollBarHeight - _current.y / _this.innerScrollVal
+//								});
+//							}
+						});
+
+						if ( _current.y < 0 ) {
+							_this.setNext($bar, { y: 0 });
+						} else
+						if ( _current.y > _barDiff ) {
+							_this.setNext($bar, { y: _barDiff + _current.y / _this.innerScrollVal });
+						} else {
+							_this.setNext($bar, { y: _current.y });
+						}
 					// すでに最大値までスクロールされている場合
+					// 場所移動したほうがいいかも？
 					} else {
 						//$bar.fadeOut(_opt.outSpeed);
 						//if ( $barX ) $barX.fadeOut(_opt.outSpeed);
 					}
-				}
+//				}
 
 				touching = false;
 				touchStartPos = touchEndPos = 0;
@@ -624,6 +736,12 @@
 				_this.setUpX = false;
 				_this.scrolling = false;
 				e.preventDefault();
+			}, false);
+
+			$elm.get(0).addEventListener("webkitTransitionEnd", function() {
+				_this.transitioning = false;
+				console.log(_this.scrollBarHeight);
+				bounce();
 			}, false);
 		}
 	};
