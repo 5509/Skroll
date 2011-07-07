@@ -1,18 +1,19 @@
 /**
  * Skroll
  *
- * @version      0.42
+ * @version      0.43
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-06-30 11:44
+ * 2011-07--6 23:40
  */
 /*
  * MEMO:
  * 基本縦のスクロールとして使う
  * 横スクロールはオプションで明示的に狭い幅を与えた場合に有効
+ * バグだらけ
  *
  * TODO:
  * IEの対応（主に7以下
