@@ -7,7 +7,7 @@
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07--6 23:40
+ * 2011-07-06 23:40
  */
 /*
  * MEMO:
@@ -29,26 +29,37 @@
 		MATRIX = "matrix(1,0,0,1,0,0)",
 		CUBICBEZIER = "cubic-bezier(0,1,0.73,0.95)",
 		CUBICBEZIERBOUNCE = "cubic-bezier(0.11,0.74,0.15,0.80)",
-		SCROLLBASE = 1,
-		SCROLLBOUNCECAPACITY = 0,
+		SCROLLBOUNCECAPACITY = 100,
 		SCROLLCANCELDURATION = 60,
 		$document = $(document),
 		$html = $("html");
 
 	// Bridge
 	$.fn.skroll = function(option) {
-		option = $.extend({
+
+		this.each(function() {
+			new Skroll($(this), option);
+		});
+		return this;
+	};
+
+	// Skroll
+	var Skroll = function(elm, option) {
+		var _borderRadius = undefined;
+
+		// Option
+		this.option = $.extend({
 			sync            : false,
 			margin          : 0,
-			width           : parseInt(this.css("width"), 10),
-			height          : parseInt(this.css("height"), 10),
+			width           : parseInt(elm.css("width"), 10),
+			height          : parseInt(elm.css("height"), 10),
 			inSpeed         : 50,
 			outSpeed        : 200,
 			delayTime       : 200,
 			scrollBarBorder : 1,
-			scrollBarWidth  : 4,
-			scrollBarHeight : 4,
-			scrollBarSpace  : 4,
+			scrollBarWidth  : 6,
+			scrollBarHeight : 6,
+			scrollBarSpace  : 6,
 			scrollBarColor  : "#000",
 			opacity         : .5,
 			cursor          : {
@@ -59,32 +70,16 @@
 			scrollX         : false
 		}, option);
 
-		// Syncオプションが有効なときはスクロールを同期する
-		if ( option.sync || this.length === 1 ) {
-			new Skroll(this, option);
-		// 無効時はそれぞれスクロールを有効にする
-		} else {
-			this.each(function() {
-				new Skroll($(this), option);
-			});
-		}
-		return this;
-	}
+		_borderRadius = (this.option.scrollBarWidth + this.option.scrollBarBorder * 2) / 2 + "px";
 
-	// Skroll
-	var Skroll = function(elm, option) {
-		var _borderRadius = (option.scrollBarWidth + option.scrollBarBorder * 2) / 2 + "px";
-
-		// Option
-		this.option = option;
 		this.$elm = elm;
 		this.$outer = $("<div class='scrollOuter'></div>");
 		this.$bar = $("<div class='scrollbar'></div>").css({
-			//border             : "solid #eee " + this.option.scrollBarBorder + "px",
 			position           : "absolute",
 			borderRadius       : _borderRadius,
 			WebKitBorderRadius : _borderRadius,
 			MozBorderRadius    : _borderRadius,
+			OBorderRadius      : _borderRadius,
 			MsBorderRadius     : _borderRadius,
 			cursor             : this.option.cursor.grab,
 			backgroundColor    : this.option.scrollBarColor,
@@ -193,7 +188,6 @@
 			}
 			_this.outerHeight = $outer.height();
 			_this.diff = _this.innerHeight - _this.outerHeight;
-			console.log(_this.scrollBarHeight);
 			_this.innerScrollVal = _this.diff / (_this.outerHeight - _this.scrollBarHeight);
 			_this.dragTop = e ? e.clientY : 0;
 			_this.scrolling = _this.dragging ? false : true;
@@ -217,19 +211,17 @@
 		},
 		innerScrolling: function() {
 			var _this = this,
+				_opt = _this.option,
 				_current = this.scrollingBase,
 				_innerTop = _current.y * _this.innerScrollVal,
-				_barDiff = _this.outerHeight - _this.scrollBarHeight,
-				// ↑インナーのトップ位置
+				_barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace,
 				_innerScrolling = _current.y >= _barDiff,
-				// ↑ドラッグがスクロール許容量を超えてしまったときにtrue
 				_maxInnerTop = -_barDiff * _this.innerScrollVal,
-				// ↑インナーの最大トップ位置
 				$bar = _this.$bar,
 				$elm = _this.$elm;
 
-			_current.y = _current.y <= 0
-					? 0 : _innerScrolling
+			_current.y = _current.y <= _opt.scrollBarSpace
+					? _opt.scrollBarSpace : _innerScrolling
 						? _barDiff : _current.y;
 
 			_this.setNext($bar, {
@@ -237,17 +229,14 @@
 			});
 			_this.setNext($elm, {
 				y: !_innerScrolling
-					? -_innerTop : _maxInnerTop
+					? 0 > _innerTop ? 0 : -_innerTop : _maxInnerTop
 			});
 		},
 		innerScrollingX: function(_barLeft) {
 			var _this = this,
 				_innerLeft = _barLeft * _this.innerScrollValX,
-				// ↑インナーのレフト位置
 				_innerScrolling = _barLeft >= _this.outerWidth - _this.scrollBarWidth,
-				// ↑ドラッグがスクロール許容量を超えてしまったときにtrue
 				_maxInnerLeft = -(_this.outerWidth - _this.scrollBarWidth) * _this.innerScrollValX,
-				// ↑インナーの最大レフト位置
 				$barX = _this.$barX,
 				$elm = _this.$elm;
 
@@ -260,7 +249,6 @@
 				$elm.css({
 					left: _innerLeft <= 0 ? 0 : -_innerLeft
 				});
-			// スクロールバーが一番下まで移動したらコンテンツも一番下に
 			} else {
 				$elm.css({
 					left: _maxInnerLeft
@@ -392,15 +380,13 @@
 
 					if ( !_opt.scrollX ) {
 						if ( !_this.setUp ) _this.setUpScrolling();
-						_this.innerScrolling(_current.y);
+						_this.innerScrolling();
 					} else {
 						_current.x = _current.x - _delta;
 						if ( !_this.setUpX ) _this.setUpScrollingX();
-						_this.innerScrollingX(_current.x);
+						_this.innerScrollingX();
 					}
 					e.preventDefault();
-					// MacのTrackpadとマウスのホイール横スクロールは
-					// イベントでは取れないかも
 				});
 
 			$bar.bind(_this.mousedown, function(e) {
@@ -578,15 +564,6 @@
 					_nextInnerX = undefined,
 					_nextInnerY = undefined;
 
-//				if ( this.scrolling ) {
-//					_nextInnerY = -_current.y * _this.innerScrollVal;
-//					_nextInnerX = -_current.x * _this.innerScrollValX;
-//
-//					_this.setNext($elm, {
-//						y: _nextInnerY,
-//						x: _nextInnerX
-//					});
-//
 				_this.css([$elm, $bar], {
 					WebkitTransitionDuration       : "0s",
 					WebkitTransitionTimingFunction : CUBICBEZIER
@@ -673,54 +650,48 @@
 				 && (Math.abs(touchEndPosPrev.y - touchEndPos.y) > 15
 				  || Math.abs(touchEndPosPrev.x - touchEndPos.x) > 15) ) {
 					// スクロールする余裕がある場合
-//					if ( _barCurrent.y >= 0 || _barCurrent.y >= -_barDiff ) {
-						acceleration = touchEndTime - touchStartTime; // 加速度として使う
-						// _diffY * a = 進む距離
+					acceleration = touchEndTime - touchStartTime; // 加速度として使う
+					// _diffY * a = 進む距離
 
-						// スクロールする量と速度は
-						// タッチしていた時間とタッチの距離による
-						_stepY = -_diffY / 300 * acceleration; // 慣性でバーが進む距離
-						_stepX = -_diffX / 300 * acceleration; // 慣性でバーが進む距離
-						// 現在位置の更新
-						_current.y = _current.y + _stepY;
-						_current.x = _current.x + _stepX;
-						// 現在位置からインナーの位置を決定する
-						_nextInnerY = -_current.y * _this.innerScrollVal;
-						_nextInnerX = -_current.x * _this.innerScrollValX;
+					// スクロールする量と速度は
+					// タッチしていた時間とタッチの距離による
+					_stepY = -_diffY / 300 * acceleration; // 慣性でバーが進む距離
+					_stepX = -_diffX / 300 * acceleration; // 慣性でバーが進む距離
+					// 現在位置の更新
+					_current.y = _current.y + _stepY;
+					_current.x = _current.x + _stepX;
+					// 現在位置からインナーの位置を決定する
+					_nextInnerY = -_current.y * _this.innerScrollVal;
+					_nextInnerX = -_current.x * _this.innerScrollValX;
 
-						// スクロール速度はタッチしていた時間による
-						_duration = 0.5 > acceleration / 400 ? acceleration / 400 : 0.5;
-						_this.css([$elm, $bar], {
-							WebkitTransitionDuration: _duration + "s"
-						});
+					// スクロール速度はタッチしていた時間による
+					_duration = 0.5 > acceleration / 400 ? acceleration / 400 : 0.5;
+					_this.css([$elm, $bar], {
+						WebkitTransitionDuration: _duration + "s"
+					});
 
-						_this.setNext($elm, {
-							y: _nextInnerY,
-							x: _nextInnerX
-						});
+					_this.setNext($elm, {
+						y: _nextInnerY,
+						x: _nextInnerX
+					});
 
-						transioningFunc(function() {
-							var __current = _this.getCurrent($elm);
-							if ( __current.y > 0 ) {
-								$bar.css({
-									height: _this.scrollBarHeight * (1 - (__current.y / 100)/3)
-								});
-							}// else
-//							if ( __current.y > _barDiff ) {
-//								$bar.css({
-//									height: _this.scrollBarHeight - _current.y / _this.innerScrollVal
-//								});
-//							}
-						});
-
-						if ( _current.y < 0 ) {
-							_this.setNext($bar, { y: 0 });
-						} else
-						if ( _current.y > _barDiff ) {
-							_this.setNext($bar, { y: _barDiff + _current.y / _this.innerScrollVal });
-						} else {
-							_this.setNext($bar, { y: _current.y });
+					transioningFunc(function() {
+						var __current = _this.getCurrent($elm);
+						if ( __current.y > 0 ) {
+							$bar.css({
+								height: _this.scrollBarHeight * (1 - (__current.y / 100)/3)
+							});
 						}
+					});
+
+					if ( _current.y < 0 ) {
+						_this.setNext($bar, { y: 0 });
+					} else
+					if ( _current.y > _barDiff ) {
+						_this.setNext($bar, { y: _barDiff + _current.y / _this.innerScrollVal });
+					} else {
+						_this.setNext($bar, { y: _current.y });
+					}
 					// すでに最大値までスクロールされている場合
 					// 場所移動したほうがいいかも？
 					} else {
