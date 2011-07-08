@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.43
+ * @version      0.44
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-06 23:40
+ * 2011-07-08 16:58
  */
 /*
  * MEMO:
@@ -59,7 +59,7 @@
 			scrollBarBorder : 1,
 			scrollBarWidth  : 6,
 			scrollBarHeight : 6,
-			scrollBarSpace  : 6,
+			scrollBarSpace  : 3,
 			scrollBarColor  : "#000",
 			opacity         : .5,
 			cursor          : {
@@ -187,8 +187,8 @@
 				return;
 			}
 			_this.outerHeight = $outer.height();
-			_this.diff = _this.innerHeight - _this.outerHeight;
-			_this.innerScrollVal = _this.diff / (_this.outerHeight - _this.scrollBarHeight);
+			_this.diff = _this.innerHeight - _this.outerHeight - _this.option.scrollBarSpace*2;
+			_this.innerScrollVal = _this.diff / (_this.outerHeight - _this.scrollBarHeight - _this.option.scrollBarSpace*2);
 			_this.dragTop = e ? e.clientY : 0;
 			_this.scrolling = _this.dragging ? false : true;
 		},
@@ -213,9 +213,10 @@
 			var _this = this,
 				_opt = _this.option,
 				_current = this.scrollingBase,
-				_innerTop = _current.y * _this.innerScrollVal,
+				_innerTop = undefined, //_current.y * _this.innerScrollVal,
 				_barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace,
 				_innerScrolling = _current.y >= _barDiff,
+				_minInnerTop = _opt.scrollBarSpace * _this.innerScrollVal,
 				_maxInnerTop = -_barDiff * _this.innerScrollVal,
 				$bar = _this.$bar,
 				$elm = _this.$elm;
@@ -223,13 +224,14 @@
 			_current.y = _current.y <= _opt.scrollBarSpace
 					? _opt.scrollBarSpace : _innerScrolling
 						? _barDiff : _current.y;
+			_innerTop = _current.y * _this.innerScrollVal;
 
 			_this.setNext($bar, {
 				y: _current.y <= 0 ? 0 : _current.y
 			});
 			_this.setNext($elm, {
-				y: !_innerScrolling
-					? 0 > _innerTop ? 0 : -_innerTop : _maxInnerTop
+				y: _current.y <= 0
+					? 0 : -_current.y * _this.innerScrollVal + _opt.scrollBarSpace * _this.innerScrollVal
 			});
 		},
 		innerScrollingX: function(_barLeft) {
@@ -297,7 +299,7 @@
 						.css({
 							width   : _opt.scrollBarWidth,
 							height  : _barHeight,
-							top     : 0,
+							top     : _opt.scrollBarSpace,
 							right   : 0,
 							opacity : _opt.opacity
 						})
