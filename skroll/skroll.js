@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.51
+ * @version      0.52
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.m1e/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-10 17:26
+ * 2011-07-10 23:58
  */
 /*
  * MEMO:
@@ -28,8 +28,8 @@
 		MATRIX = "matrix(1,0,0,1,0,0)",
 		CUBICBEZIER = "cubic-bezier(0,1,0.73,0.95)",
 		CUBICBEZIERBOUNCE = "cubic-bezier(0.11,0.74,0.15,0.80)",
-		SCROLLBOUNCECAPACITY = 100,
-		SCROLLCANCELDURATION = 60,
+		SCROLLBOUNCECAPACITY = 150,
+		SCROLLCANCELDURATION = 80,
 		$document = $(document),
 		$html = $("html");
 
@@ -41,7 +41,8 @@
 
 	// Skroll
 	var Skroll = function(elm, option) {
-		var _borderRadius = undefined;
+		var _borderRadius = undefined,
+			_this = this;
 
 		// Option
 		this.option = $.extend({
@@ -129,6 +130,28 @@
 		} else {
 			this.evnetBindMobile();
 		}
+		// 他のコンテンツもロードが終わってから
+		// スクロールバーをチラ見せする
+		$(window).one("load", function() {
+			var _opt = _this.option,
+				$bar = _this.$bar,
+				$barX = _this.$barX;
+			if ( _opt.scrollBarHide ) {
+				$bar
+					.fadeIn(_opt.inSpeed)
+					.delay(_opt.delayTime)
+					.fadeOut(_opt.outSpeed*2);
+				if ( !$barX ) return false;
+				$barX
+					.fadeIn(_opt.inSpeed)
+					.delay(_opt.delayTime)
+					.fadeOut(_opt.outSpeed*2);
+			} else {
+				$bar.fadeIn(_opt.inSpeed);
+				if ( !barX ) return false;
+				$barX.fadeIn(_opt.inSpeed);
+			}
+		});
 	};
 	Skroll.prototype = {
 		getCurrent: function($el) {
@@ -491,31 +514,6 @@
 					return false;
 				});
 			}
-
-			// 他のコンテンツもロードが終わってから
-			// スクロールバーをチラ見せする
-			$(window).one("load", function() {
-				if ( MOBILE ) {
-					$bar.fadeIn(_opt.inSpeed);
-				} else {
-					if ( _opt.scrollBarHide ) {
-						$bar
-							.fadeIn(_opt.inSpeed)
-							.delay(_opt.delayTime)
-							.fadeOut(_opt.outSpeed);
-
-						if ( !$barX ) return false;
-						$barX
-							.fadeIn(_opt.inSpeed)
-							.delay(_opt.delayTime)
-							.fadeOut(_opt.outSpeed);
-					} else {
-						$bar.fadeIn(_opt.inSpeed);
-						if ( !barX ) return false;
-						$barX.fadeIn(_opt.inSpeed);
-					}
-				}
-			});
 		},
 		evnetBindMobile: function() {
 			var _this = this,
@@ -551,9 +549,8 @@
 				},
 				bounce = function() {
 					var _barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace*2,
-						_barDiffX = _this.outerWidth - _this.scrollBarWidth,
 						_maxInnerTop = -_barDiff * _this.innerScrollVal,
-						_current = _this.scrollingBase;//_this.getCurrent($bar);
+						_current = _this.scrollingBase;
 
 					// 範囲を超えた場合のボイン戻し
 					if ( _current.y > _barDiff ) {
@@ -562,9 +559,6 @@
 							WebkitTransitionDuration       : "0.4s",
 							WebkitTransitionTimingFunction : CUBICBEZIERBOUNCE
 						});
-//						_this.setNext($bar, {
-//							y: _barDiff
-//						}, true);
 						_this.setNext($elm, {
 							y: _maxInnerTop
 						});
@@ -584,6 +578,7 @@
 							WebkitTransitionDuration       : "0s",
 							WebkitTransitionTimingFunction : CUBICBEZIER
 						});
+						$bar.stop(true, true).fadeOut(_opt.outSpeed);
 					}
 					$bar.css("height", _this.scrollBarHeight);
 				};
@@ -660,14 +655,12 @@
 				});
 				_this.$bar.css({
 					WebkitTransitionProperty: "all",
-					
 					height: _this.scrollBarHeight
 				});
 
 				// Y scrolling
 				if ( !_this.setUp ) {
-					//$bar.stop(true, true).fadeIn(_opt.inSpeed);
-					$bar.show();
+					$bar.stop(true, true).fadeIn(_opt.inSpeed);
 					_this.setUpScrolling();
 				}
 				_this.innerScrolling(_to);
@@ -756,21 +749,17 @@
 						}
 					});
 
-					console.log("current.y: " + _current.y + ", diffY: " + _diffY);
 					// スクロールバーの最終地点
 					// 一番上よりさらに上になった場合
 					if ( _current.y < 0 ) {
-						console.log("upup");
 						_this.setNext($bar, { y: 0 }, true, _to);
 					} else
 					// 一番下よりさらに下になった場合
 					if ( _current.y >= _barDiff ) {
-						console.log("downdown");
 						_this.setNext($bar, { y: _barDiff }, true, _to);
 						// 第4引数にtrueを指定するとbottomで
 					// 上〜下の場合
 					} else {
-						console.log("middlemiddle: " + _to);
 						_this.setNext($bar, { y: _current.y }, true, _to);
 					}
 				// モーメンタムスクロールなしで指を離したとき
@@ -783,6 +772,8 @@
 					// 一番下よりさらに下になった場合
 					if ( _current.y >= _barDiff ) {
 						bounce();
+					} else {
+						$bar.stop(true, true).fadeOut(_opt.outSpeed);
 					}
 					// 上〜下の場合は特に何もしない
 				}
