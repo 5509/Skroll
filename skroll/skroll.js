@@ -527,6 +527,7 @@
 				outer = $outer.get(0),
 				touching = false,
 				touchStartPos = undefined,
+				touchEndPosPPrev = undefined,
 				touchEndPosPrev = undefined,
 				touchEndPos = undefined,
 				acceleration = undefined,
@@ -632,10 +633,17 @@
 					_to = undefined;
 
 				touchEndPosPrev = touchEndPos || touchStartPos;
+				//touchEndPosPPrev = touchEndPosPrev;
 				touchEndPos = {
 					x: _t.pageX,
 					y: _t.pageY
 				};
+
+				// 一度折り返した場合は、touchStartPosを折り返した地点に置き換える
+				if ( touchEndPos.y > touchStartPos.y && touchEndPos.y < touchEndPosPrev.y
+				  || touchEndPos.y < touchStartPos.y && touchEndPos.y > touchEndPosPrev.y ) {
+					touchStartPos = touchEndPosPrev;
+				}
 				// 最後にtouchmoveしたタイムスタンプ
 				touchMoveEndTime = +new Date;
 
@@ -748,17 +756,21 @@
 						}
 					});
 
+					console.log("current.y: " + _current.y + ", diffY: " + _diffY);
 					// スクロールバーの最終地点
 					// 一番上よりさらに上になった場合
 					if ( _current.y < 0 ) {
-						_this.setNext($bar, { y: 0 }, true);
+						console.log("upup");
+						_this.setNext($bar, { y: 0 }, true, _to);
 					} else
 					// 一番下よりさらに下になった場合
 					if ( _current.y >= _barDiff ) {
+						console.log("downdown");
 						_this.setNext($bar, { y: _barDiff }, true, _to);
 						// 第4引数にtrueを指定するとbottomで
 					// 上〜下の場合
 					} else {
+						console.log("middlemiddle: " + _to);
 						_this.setNext($bar, { y: _current.y }, true, _to);
 					}
 				// モーメンタムスクロールなしで指を離したとき
