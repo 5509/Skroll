@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.50
+ * @version      0.51
  * @author       nori (norimania@gmail.com)
- * @copyright    5509 (http://5509.me/)
+ * @copyright    5509 (http://5509.m1e/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-10 11:02
+ * 2011-07-10 17:26
  */
 /*
  * MEMO:
@@ -600,6 +600,7 @@
 				}, true);
 			});
 			outer.addEventListener("touchstart", function(e) {
+				if ( e.touches[1] ) return;
 				var _t = e.touches[0],
 					_current = this.scrollingBase,
 					_nextInnerX = undefined,
@@ -621,6 +622,8 @@
 				//e.preventDefault();
 			}, false);
 			outer.addEventListener("touchmove", function(e) {
+				if ( e.touches[1] ) return;
+				else if ( !touching ) return;
 				var _t = e.touches[0],
 					_diffY, _diffX,
 					_barCurrent = _this.getCurrent($bar),
@@ -649,6 +652,7 @@
 				});
 				_this.$bar.css({
 					WebkitTransitionProperty: "all",
+					
 					height: _this.scrollBarHeight
 				});
 
@@ -672,6 +676,7 @@
 				e.preventDefault();
 			}, false);
 			outer.addEventListener("touchend", function(e) {
+				if ( e.touches[1] && touching ) return;
 				var _diffY = (touchEndPos.y - touchStartPos.y), // タッチの移動距離
 					_diffX = (touchEndPos.x - touchStartPos.x), // タッチの移動距離
 					_stepY = undefined, // 慣性でバーが進む距離
@@ -693,8 +698,10 @@
 
 				// ひとつ手前のtouchEndPosとの差があまりない場合のみ
 				// モーメンタムスクロール
-				if ( touchEndTime - touchMoveEndTime < SCROLLCANCELDURATION
-				 && (Math.abs(touchEndPosPrev.y - touchEndPos.y) > 15
+				if ( _current.y > 0
+				  && _current.y < _barDiff
+				  && touchEndTime - touchMoveEndTime < SCROLLCANCELDURATION
+				  && (Math.abs(touchEndPosPrev.y - touchEndPos.y) > 15
 				  || Math.abs(touchEndPosPrev.x - touchEndPos.x) > 15) ) {
 
 					// スクロールする余裕がある場合
