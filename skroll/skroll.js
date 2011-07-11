@@ -1,24 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.52
+ * @version      0.53
  * @author       nori (norimania@gmail.com)
- * @copyright    5509 (http://5509.m1e/)
+ * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-10 23:58
- */
-/*
- * MEMO:
- * 基本縦のスクロールとして使う
- * 横スクロールはオプションで明示的に狭い幅を与えた場合に有効
- * バグだらけ
- *
- * TODO:
- * IEの対応（主に7以下
- * Androidのtouchmove対応が微妙っぽい
- * overflow: scrollが使えるらしいiOS5の対応をどうするのか
+ * 2011-07-11 13:08
  */
 ;(function($, window, document, undefined) {
 
@@ -34,19 +23,17 @@
 		$html = $("html");
 
 	// Bridge
-	$.fn.skroll = function(option) {
+	$.fn.Skroll = function(option) {
 		new Skroll(this, option);
 		return this;
 	};
 
 	// Skroll
 	var Skroll = function(elm, option) {
-		var _borderRadius = undefined,
-			_this = this;
+		var _borderRadius = undefined;
 
 		// Option
 		this.option = $.extend({
-			sync            : false,
 			margin          : 0,
 			width           : parseInt(elm.css("width"), 10),
 			height          : parseInt(elm.css("height"), 10),
@@ -96,7 +83,7 @@
 		this.dragTop = 0;
 		this.dragLeft = 0;
 		this.innerWidth = elm.get(0).offsetWidth,
-		this.id = ".scrl" + (Math.floor(Math.random() * 1000) * 5); // イベント識別子
+		this.id = ".skrl" + (Math.floor(Math.random() * 1000) * 5); // イベント識別子
 		this.mousedown = "mousedown" + this.id;
 		this.mousemove = "mousemove" + this.id;
 		this.mouseup = "mouseup" + this.id;
@@ -118,7 +105,7 @@
 		this.innerHeight = elm.get(0).offsetHeight;
 		// 明示的なwidthの指定があり
 		// そのwidthがコンテンツ幅を超えている場合は、横スクロールをONにする
-		if ( option.width ) {
+		if ( option && option.width ) {
 			this.sideScroll = true;
 			this.$barX = this.$bar.clone();
 		}
@@ -130,28 +117,22 @@
 		} else {
 			this.evnetBindMobile();
 		}
-		// 他のコンテンツもロードが終わってから
-		// スクロールバーをチラ見せする
-		$(window).one("load", function() {
-			var _opt = _this.option,
-				$bar = _this.$bar,
-				$barX = _this.$barX;
-			if ( _opt.scrollBarHide ) {
-				$bar
-					.fadeIn(_opt.inSpeed)
-					.delay(_opt.delayTime)
-					.fadeOut(_opt.outSpeed*2);
-				if ( !$barX ) return false;
-				$barX
-					.fadeIn(_opt.inSpeed)
-					.delay(_opt.delayTime)
-					.fadeOut(_opt.outSpeed*2);
-			} else {
-				$bar.fadeIn(_opt.inSpeed);
-				if ( !barX ) return false;
-				$barX.fadeIn(_opt.inSpeed);
-			}
-		});
+
+		if ( this.option.scrollBarHide ) {
+			this.$bar
+				.fadeIn(this.option.inSpeed)
+				.delay(this.option.delayTime)
+				.fadeOut(this.option.outSpeed*2);
+			if ( !this.$barX ) return false;
+			this.$barX
+				.fadeIn(this.option.inSpeed)
+				.delay(this.option.delayTime)
+				.fadeOut(this.option.outSpeed*2);
+		} else {
+			this.$bar.fadeIn(this.option.inSpeed);
+			if ( !this.barX ) return false;
+			this.$barX.fadeIn(this.option.inSpeed);
+		}
 	};
 	Skroll.prototype = {
 		getCurrent: function($el) {
@@ -556,8 +537,8 @@
 					if ( _current.y > _barDiff ) {
 						_current.y = _barDiff;
 						_this.css([$elm, $bar], {
-							WebkitTransitionDuration       : "0.4s",
-							WebkitTransitionTimingFunction : CUBICBEZIERBOUNCE
+							WebkitTransitionDuration: "0.4s",
+							WebkitTransitionTimingFunction: CUBICBEZIERBOUNCE
 						});
 						_this.setNext($elm, {
 							y: _maxInnerTop
@@ -566,8 +547,8 @@
 					if ( 0 > _current.y ) {
 						_current.y = 0;
 						_this.css([$elm, $bar], {
-							WebkitTransitionDuration       : "0.4s",
-							WebkitTransitionTimingFunction : CUBICBEZIERBOUNCE
+							WebkitTransitionDuration: "0.4s",
+							WebkitTransitionTimingFunction: CUBICBEZIERBOUNCE
 						});
 						$bar.css("height", _this.scrollBarHeight);
 						_this.setNext($elm, {
@@ -575,10 +556,13 @@
 						});
 					} else {
 						_this.css([$elm, $bar], {
-							WebkitTransitionDuration       : "0s",
-							WebkitTransitionTimingFunction : CUBICBEZIER
+							WebkitTransitionDuration: "0s",
+							WebkitTransitionTimingFunction: CUBICBEZIER
 						});
-						$bar.stop(true, true).fadeOut(_opt.outSpeed);
+						$bar
+							.stop(true, true)
+							.delay(_opt.delayTime)
+							.fadeOut(_opt.outSpeed);
 					}
 					$bar.css("height", _this.scrollBarHeight);
 				};
@@ -615,7 +599,6 @@
 					y: _t.pageY
 				};
 				e.stopPropagation();
-				//e.preventDefault();
 			}, false);
 			outer.addEventListener("touchmove", function(e) {
 				if ( e.touches[1] ) return;
@@ -628,7 +611,6 @@
 					_to = undefined;
 
 				touchEndPosPrev = touchEndPos || touchStartPos;
-				//touchEndPosPPrev = touchEndPosPrev;
 				touchEndPos = {
 					x: _t.pageX,
 					y: _t.pageY
@@ -773,9 +755,12 @@
 					if ( _current.y >= _barDiff ) {
 						bounce();
 					} else {
-						$bar.stop(true, true).fadeOut(_opt.outSpeed);
+						$bar
+							.stop(true, true)
+							.delay(_opt.delayTime)
+							.fadeOut(_opt.outSpeed);
 					}
-					// 上〜下の場合は特に何もしない
+					// 上〜下の場合は何もしない
 				}
 
 				touching = false;
@@ -809,7 +794,7 @@
 	 *
 	 * 2011-02-08 15:41
 	 */
- 	$.fn.m5ImgLoad = function(callback, interval) {
+	$.fn.m5ImgLoad = function(callback, interval) {
 		var _img = $(this).get(0),
 			newImg = new Image();
 
@@ -822,7 +807,7 @@
 			}
 			setTimeout(arguments.callee, interval || 20);
 		}());
-		 return this;
-	}
+		return this;
+	};
 
 }(jQuery, this, this.document));
