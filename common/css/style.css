@@ -87,9 +87,6 @@ div.pagebody {
 				linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
 }
 
-div.scrollOuter {
-	background: #ccc;
-}
 div.pagebody div.txt {
 	margin: 2em auto 0;
 	width: 300px;

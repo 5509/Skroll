@@ -42,10 +42,9 @@
 			scrollBarColor    : "#000",
 			opacity           : .5,
 			cursor            : {
-				grab     : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAVBJREFUeNq8lNtqAjEQhjfr1hNCr3vZV+gbCCJY6oXg+z+A0lbrWWPTGf0HZtNpTSh04CcxiV/mlHUhhOK/zZEqUoAqrP0J0uVRTK0nX8AHmhZE/472mha4VPMGqZMZWY/0CY6zoDxvk56cu+4nFPEVZ86kOwGXP+Q0yaJLO4i2BmurIrzo/Flm5PcBjAvMwfWD3JwRvj7/SJqRtqVVoJwHAWA/rv63AuWCOUrSEZ1QKxQTxxqcYWuAvUCZvsfGOuv5XR0YcB4BPQuUJzvSgvuO9Jzp7Rb/9+iCC5QnJ3i5gCa3wNgfkT4QqY9fVECi+cCc9EaaJni8gvYSehG9HknDO9ZTXhY7sYFDwYJKGlboXd4bkrf3NLYi2A753+gCWdAiyq94e8AnThuHuwTUay+LXz6yFbzrYYwv97is1p+3oE6loDTOBfS3R+g1T78EGABoDL2O9rWNwgAAAABJRU5ErkJggg==') 6 6, default",
-				grabbing : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAOFJREFUeNrslDEOwjAMRTGq0ompTEywcBsO0YkDcwCYOtGpLPESXPFThUASV7AgYemrUWO//rhuyTm3+HbQH/qDUCIK9/wGZdZP4VkpqJsS5F5qHcPV0OQR8QDUUAlqRBvRWdNvLbQRXcMkBbQWcQ7q5kwEatai3tctPxqdB/AAp1PE0LGfu2i0ZkcMXYm2orYExn4ruolsDhrGUeF4EHW4JqHj5gWJrDhpD3HpM/VzusfVZIAnmOBwBKs3yQynBj1uElCLfr6cqEoUMJx08UuInNq5fynvtM44HUKnnnUXYADcMYKw5+rWOgAAAABJRU5ErkJggg==') 6 6, default"
+				grab     : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAASUlEQVR42qXNQQqAQAxD0cT7H3qQj/MVKi4MXb3SJscUtX0o0qTtTZHknBetHyCWHTTo1UVUDnfUqLtNUuVJRVRWYRGVv3XKf13yEgJFXOqs0wAAAABJRU5ErkJggg==') 6 6, default",
+				grabbing : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAAOklEQVR42sXQMQ4AIAxCUb73P7SDDNI03YyE6S2k1eryReE0FMkl1EFYg2+lU6RZc61qMHkbo7795AZ/8gKwxSMcDgAAAABJRU5ErkJggg==') 6 6, default"
 			},
-			bounceCapacity    : 150,
 			scrollCancel      : 80,
 			cubicBezier       : "cubic-bezier(0,1,0.73,0.95)",
 			cubicBezierBounce : "cubic-bezier(0.11,0.74,0.15,0.80)",
@@ -87,21 +86,18 @@
 		this.draggingX = false;
 		this.scrolling = false;
 		this.dragTop = 0;
-		this.dragLeft = 0;
 		this.innerWidth = elm.get(0).offsetWidth,
-		this.id = ".skrl" + (Math.floor(Math.random() * 1000) * 5); // イベント識別子
+		this.id = ".skrl" + (Math.floor(Math.random() * 1000) * 5);
+		// イベント識別子
 		this.mousedown = "mousedown" + this.id;
 		this.mousemove = "mousemove" + this.id;
 		this.mouseup = "mouseup" + this.id;
 		this.outerHeight = undefined;
 		this.diff = undefined;
-		this.diffX = undefined;
 		this.scrollBarWidth = undefined;
 		this.scrollBarHeight = undefined;
 		this.innerScrollVal = undefined;
-		this.innerScrollValX = undefined;
 		this.setUp = undefined;
-		this.setUpX = undefined;
 		this.imgLoaded = 0;
 		this.imgLength = 0;
 		this.sideScroll = false;
@@ -208,6 +204,8 @@
 				_barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace,
 				_innerScrolling = _current.y >= _barDiff,
 				_maxInnerTop = -_barDiff * _this.innerScrollVal,
+				_scrollBounceCapacity = _this.outerHeight*9/10,
+				_scrollBarHeight = undefined,
 				$bar = _this.$bar,
 				$elm = _this.$elm;
 
@@ -216,22 +214,27 @@
 					? _barDiff : _current.y;
 
 			if ( MOBILE ) {
-				_innerNext.y = _current.y * _this.innerScrollVal <= -_opt.bounceCapacity
-					? _opt.bounceCapacity :
-						-_current.y * _this.innerScrollVal <= _maxInnerTop - _opt.bounceCapacity
-							? _maxInnerTop - _opt.bounceCapacity
+				_innerNext.y = _current.y * _this.innerScrollVal <= -_scrollBounceCapacity
+					? _scrollBounceCapacity :
+						-_current.y * _this.innerScrollVal <= _maxInnerTop - _scrollBounceCapacity
+							? _maxInnerTop - _scrollBounceCapacity
 								: -_current.y * _this.innerScrollVal;
 
 				if ( _innerNext.y > 0 ) {
+					_scrollBarHeight = _this.scrollBarHeight * (1 - (_innerNext.y / 100)/2);
 					$bar.css({
-						height: _this.scrollBarHeight * (1 - (_innerNext.y / 100)/3)
+						height: _scrollBarHeight < 10 ?
+							10 : _scrollBarHeight
 					});
 				} else
 				if ( _innerNext.y < _maxInnerTop ) {
+					_scrollBarHeight = _this.scrollBarHeight * (1 - (-(_innerNext.y - _maxInnerTop) / 100)/2);
 					$bar.css({
-						height: _this.scrollBarHeight * (1 - (-(_innerNext.y - _maxInnerTop) / 100)/3)
+						height: _scrollBarHeight < 10 ?
+							10 : _scrollBarHeight
 					});
 				}
+
 				_this.setNext($bar, {
 					y: _next.y <= 0 ? 0 : _next.y
 				}, true, _innerNext.y > 0 ? false : _innerNext.y < _maxInnerTop ? true : _to);
@@ -559,6 +562,7 @@
 					_nextInnerY = undefined, // 慣性でインナーが進んだ後
 					_barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace,
 					_maxInnerTop = -_barDiff * _this.innerScrollVal,
+					_scrollBounceCapacity = _this.outerHeight/5,
 					_duration = undefined,
 					// 進む方向 down: false, up: true
 					// moveのときとは逆
@@ -595,26 +599,25 @@
 					});
 
 					_this.setNext($elm, {
-						y: _nextInnerY > _opt.bounceCapacity ? _opt.bounceCapacity :
-							_nextInnerY < _maxInnerTop - _opt.bounceCapacity ? _maxInnerTop - _opt.bounceCapacity : _nextInnerY
+						y: _nextInnerY > _scrollBounceCapacity ? _scrollBounceCapacity :
+							_nextInnerY < _maxInnerTop - _scrollBounceCapacity ? _maxInnerTop - _scrollBounceCapacity : _nextInnerY
 					});
 
 					// バーが縮むやつ
 					// ここはbounceのtransitionが呼ばれているときだけ
 					_this.transioningFunc(function() {
-						var __current = _this.getCurrent($elm);
+						var __current = _this.getCurrent($elm),
+							__scrollBarHeight = undefined;
 						if ( __current.y > 0 ) {
-							$bar.css({
-								// 全体のパーセンテージから縮める
-								height: _this.scrollBarHeight * (1 - (__current.y / 100)/2)
-							});
+							__scrollBarHeight = _this.scrollBarHeight * (1 - (__current.y / 100)/2);
 						} else
 						if ( __current.y < _maxInnerTop ) {
-							$bar.css({
-								// 全体のパーセンテージから縮める
-								height: _this.scrollBarHeight * (1 - (-(__current.y - _maxInnerTop) / 100)/2)
-							});
+							__scrollBarHeight = _this.scrollBarHeight * (1 - (-(__current.y - _maxInnerTop) / 100)/2);
 						}
+						$bar.css({
+							height: __scrollBarHeight < 10 ?
+								10 : __scrollBarHeight
+						});
 					});
 
 					// スクロールバーの最終地点
