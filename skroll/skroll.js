@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.54
+ * @version      0.55
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-11 21:56
+ * 2011-07-11 22:26
  */
 ;(function($, window, document, undefined) {
 
@@ -480,7 +480,6 @@
 
 				anchor.addEventListener("touchend", function(e) {
 					$this.click();
-					$bar.stop(true, true).fadeOut(_opt.outSpeed);
 					e.stopPropagation();
 				}, true);
 			});
@@ -500,8 +499,7 @@
 					x: _t.pageX,
 					y: _t.pageY
 				};
-				e.stopPropagation();
-			}, false);
+			}, true);
 			outer.addEventListener("touchmove", function(e) {
 				if ( e.touches[1] ) return;
 				else if ( !touching ) return;
@@ -545,9 +543,10 @@
 				}
 				_this.innerScrolling(_to);
 				e.preventDefault();
-			}, false);
+			}, true);
 			outer.addEventListener("touchend", function(e) {
 				if ( e.touches[1] && touching ) return;
+				if ( !touchEndPos ) return;
 				var _diffY = (touchEndPos.y - touchStartPos.y), // タッチの移動距離
 					_stepY = undefined, // 慣性でバーが進む距離
 					_nextInnerY = undefined, // 慣性でインナーが進んだ後
@@ -644,7 +643,7 @@
 				_this.setUp = false;
 				_this.scrolling = false;
 				e.preventDefault();
-			}, false);
+			}, true);
 
 			$elm.get(0).addEventListener("webkitTransitionEnd", function() {
 				_this.transitioning = false;
