@@ -1,19 +1,19 @@
 /**
  * Skroll
  *
- * @version      0.55
+ * @version      0.56
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-11 22:26
+ * 2011-07-12 00:09
  */
 ;(function($, window, document, undefined) {
 
 	// CONST
 	var MOBILE = "ontouchstart" in window,
-		MOUSEWHEEL = "onmousewheel" in window ? "mousewheel" : "DOMMouseScroll",
+		MOUSEWHEEL = "onmousewheel" in document ? "mousewheel" : "DOMMouseScroll",
 		MATRIX = "matrix(1,0,0,1,0,0)",
 		$document = $(document),
 		$html = $("html");
@@ -49,9 +49,16 @@
 			scrollCancel      : 80,
 			cubicBezier       : "cubic-bezier(0,1,0.73,0.95)",
 			cubicBezierBounce : "cubic-bezier(0.11,0.74,0.15,0.80)",
-			scrollBarHide     : true,
-			scrollX           : false
+			scrollBarHide     : true
 		}, option);
+
+		// 古いブラウザはcusorのdataURLは無視する
+		if ( !$.support.opacity ) {
+			this.option.cursor = {
+				grab: "move",
+				grabbing: "move"
+			}
+		}
 
 		_borderRadius = (this.option.scrollBarWidth + this.option.scrollBarBorder * 2) / 2 + "px";
 
@@ -384,7 +391,6 @@
 		},
 		eventBind: function() {
 			var _this = this,
-				_barLeft = undefined,
 				_opt = this.option,
 				$bar = this.$bar,
 				$outer = this.$outer;
@@ -405,6 +411,7 @@
 					$bar.fadeOut(_opt.outSpeed);
 				})
 				.bind(MOUSEWHEEL, function(e) {
+					e = e || window.event;
 					// detailはwheelDeltaと正負が逆になり
 					// 値もwheelDeltaの1/10
 					var _delta = Math.round(e.wheelDelta/10) || -e.detail,
@@ -521,7 +528,7 @@
 				// 最後にtouchmoveしたタイムスタンプ
 				touchMoveEndTime = +new Date;
 
-				_diffY = (touchEndPosPrev.y - touchEndPos.y) * (2 / 5);
+				_diffY = (touchEndPosPrev.y - touchEndPos.y) * (1 / 5);
 				// 移動距離が気持ち短い方がなめらかにみえる
 				_current.y = _current.y + _diffY;
 				// 進む方向 down: true, up: false
