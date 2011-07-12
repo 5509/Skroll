@@ -7,7 +7,7 @@
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-12 00:09
+ * 2011-07-12 12:29
  */
 ;(function($, window, document, undefined) {
 
@@ -51,7 +51,7 @@
 			scrollBarHide     : true
 		}, option);
 
-		// 古いブラウザはcusorのdataURLは無視する
+		// 古いブラウザはcursorのdataURLは無視する
 		if ( !$.support.opacity ) {
 			this.option.cursor = {
 				grab: "move",
@@ -66,10 +66,8 @@
 		this.$bar = $("<div class='scrollbar'></div>").css({
 			position           : "absolute",
 			borderRadius       : _borderRadius,
-			WebKitBorderRadius : _borderRadius,
+			WebkitBorderRadius : _borderRadius,
 			MozBorderRadius    : _borderRadius,
-			OBorderRadius      : _borderRadius,
-			MsBorderRadius     : _borderRadius,
 			cursor             : this.option.cursor.grab,
 			backgroundColor    : this.option.scrollBarColor,
 			WebkitTransform    : MATRIX,
