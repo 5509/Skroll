@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.56
+ * @version      0.57
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-12 12:29
+ * 2011-07-12 19:11
  */
 ;(function($, window, document, undefined) {
 
@@ -383,10 +383,12 @@
 					WebkitTransitionDuration: "0s",
 					WebkitTransitionTimingFunction: _opt.cubicBezier
 				});
-				$bar
-					.stop(true, true)
-					.delay(_opt.delayTime)
-					.fadeOut(_opt.outSpeed);
+				if ( _opt.scrollBarHide ) {
+					$bar
+						.stop(true, true)
+						.delay(_opt.delayTime)
+						.fadeOut(_opt.outSpeed);
+				}
 			}
 			$bar.css("height", _this.scrollBarHeight);
 		},
@@ -450,7 +452,7 @@
 						$document.unbind(_this.mousemove, _this.mouseup);
 						$html.css("cursor", "default");
 						$bar.css("cursor", _opt.cursor.grab);
-						if ( !_this.enteringCursor ) {
+						if ( !_this.enteringCursor && _opt.scrollBarHide ) {
 							$bar.fadeOut(_opt.outSpeed);
 						}
 					});
@@ -636,10 +638,12 @@
 					  || _current.y >= _barDiff ) {
 						_this.bounceEffect($bar, $elm);
 					} else {
-						$bar
-							.stop(true, true)
-							.delay(_opt.delayTime)
-							.fadeOut(_opt.outSpeed);
+						if ( _opt.scrollBarHide ) {
+							$bar
+								.stop(true, true)
+								.delay(_opt.delayTime)
+								.fadeOut(_opt.outSpeed);
+						}
 					}
 					// 上〜下の場合は何もしない
 				}
