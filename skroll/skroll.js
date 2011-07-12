@@ -19,7 +19,7 @@
 		$html = $("html");
 
 	// Bridge
-	$.fn.Skroll = function(option) {
+	$.fn.skroll = function(option) {
 		new Skroll(this, option);
 		return this;
 	};
@@ -627,7 +627,7 @@
 								// 上〜下の場合
 								_current.y
 					}, true, _to);
-					
+
 				// モーメンタムスクロールなしで指を離したとき
 				} else {
 					// スクロールバーの最終地点
