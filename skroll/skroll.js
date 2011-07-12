@@ -68,8 +68,6 @@
 			borderRadius       : _borderRadius,
 			WebkitBorderRadius : _borderRadius,
 			MozBorderRadius    : _borderRadius,
-			OBorderRadius      : _borderRadius,
-			MsBorderRadius     : _borderRadius,
 			cursor             : this.option.cursor.grab,
 			backgroundColor    : this.option.scrollBarColor,
 			WebkitTransform    : MATRIX,
