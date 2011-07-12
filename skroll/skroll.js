@@ -7,7 +7,7 @@
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-12 00:09
+ * 2011-07-12 12:27
  */
 ;(function($, window, document, undefined) {
 
@@ -66,7 +66,7 @@
 		this.$bar = $("<div class='scrollbar'></div>").css({
 			position           : "absolute",
 			borderRadius       : _borderRadius,
-			WebKitBorderRadius : _borderRadius,
+			WebkitBorderRadius : _borderRadius,
 			MozBorderRadius    : _borderRadius,
 			OBorderRadius      : _borderRadius,
 			MsBorderRadius     : _borderRadius,
