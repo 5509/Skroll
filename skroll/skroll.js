@@ -7,7 +7,7 @@
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-12 12:27
+ * 2011-07-12 12:29
  */
 ;(function($, window, document, undefined) {
 
@@ -51,7 +51,7 @@
 			scrollBarHide     : true
 		}, option);
 
-		// 古いブラウザはcusorのdataURLは無視する
+		// 古いブラウザはcursorのdataURLは無視する
 		if ( !$.support.opacity ) {
 			this.option.cursor = {
 				grab: "move",
