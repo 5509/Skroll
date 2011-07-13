@@ -1,14 +1,14 @@
 @charset "utf-8";
 
-@import url("share/default.css");
-@import url("share/fonts.css");
+@import url(share/default.css);
+@import url(share/fonts.css);
 @import url(http://fonts.googleapis.com/css?family=Copse);
 
 /* Clearfix
 =================================*/
 
-div.pagebody div.txt { /zoom : 1; }
-div.pagebody div.txt:after { content : ''; display : block; clear : both; height:0; }
+div.pagebody div.txt { /zoom: 1; }
+div.pagebody div.txt:after { content: ''; display: block; clear: both; height: 0; }
 
 /* =========================================
 *  COMMON
@@ -74,18 +74,22 @@ div.pagebody {
 	width: 600px;
 	background: #fafafa;
 	background: url(../images/dots.png) repeat-x,
-				-webkit-gradient(radial, center top, 300, center top, 0, from(hsla(0,0%,100%,0)), to(hsla(0,0%,100%,.7))),
+				-webkit-gradient(radial, center top, 0, center top, 300, from(hsla(0,0%,100%,0)), to(hsla(0,0%,100%,.7))),
 				-webkit-gradient(linear, left top, left 200, from(hsla(0,0%,100%,.2)), to(hsla(0,0%,100%,0)));
 	background: url(../images/dots.png) repeat-x,
-				-moz-radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
-				-moz-linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+				-moz-radial-gradient(center top, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				-moz-linear-gradient(hsla(0,0%,100%,.2) 0, hsla(0,0%,100%,0) 200px);
 	background: url(../images/dots.png) repeat-x,
-				-o-radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
-				-o-linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+				/* Opera 11.50 段階ではまだradial-gradient()に未対応
+				-o-radial-gradient(center top, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				*/
+				-o-linear-gradient(hsla(0,0%,100%,.2) 0, hsla(0,0%,100%,0) 200px);
 	background: url(../images/dots.png) repeat-x,
-				radial-gradient(50% 0% 180deg, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
-				linear-gradient(0% 25% 90deg, hsla(0,0%,100%,0), hsla(0,0%,100%,0.2) );
+				/* 仕様が変わるかもしれないので書かないほうがいいかも…… */
+				radial-gradient(center top, circle closest-corner, hsla(0,0%,100%,.7), hsla(0,0%,100%,0)),
+				linear-gradient(hsla(0,0%,100%,.2) 0, hsla(0,0%,100%,0) 200px);
 }
+
 
 div.pagebody div.txt {
 	margin: 2em auto 0;
