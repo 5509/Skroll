@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.57
+ * @version      0.58
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-12 19:11
+ * 2011-07-13 22:52
  */
 ;(function($, window, document, undefined) {
 
@@ -29,26 +29,29 @@
 		var _borderRadius = undefined;
 		// Option
 		this.option = $.extend({
-			margin            : 0,
-			width             : parseInt(elm.css("width"), 10),
-			height            : parseInt(elm.css("height"), 10),
-			inSpeed           : 50,
-			outSpeed          : 200,
-			delayTime         : 200,
-			scrollBarBorder   : 1,
-			scrollBarWidth    : 6,
-			scrollBarHeight   : 6,
-			scrollBarSpace    : 3,
-			scrollBarColor    : "#000",
-			opacity           : .5,
-			cursor            : {
+			margin             : 0,
+			width              : parseInt(elm.css("width"), 10),
+			height             : parseInt(elm.css("height"), 10),
+			inSpeed            : 50,
+			outSpeed           : 200,
+			delayTime          : 200,
+			scrollBarBorder    : 1,
+			scrollBarWidth     : 6,
+			scrollBarHeight    : 6,
+			scrollBarSpace     : 3,
+			scrollBarColor     : "#000",
+			opacity            : .5,
+			scrollBarBg        : false,
+			scrollBarBgColor   : "#666",
+			scrollBarBgOpacity : .5,
+			cursor             : {
 				grab     : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAASUlEQVR42qXNQQqAQAxD0cT7H3qQj/MVKi4MXb3SJscUtX0o0qTtTZHknBetHyCWHTTo1UVUDnfUqLtNUuVJRVRWYRGVv3XKf13yEgJFXOqs0wAAAABJRU5ErkJggg==') 6 6, default",
 				grabbing : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAAOklEQVR42sXQMQ4AIAxCUb73P7SDDNI03YyE6S2k1eryReE0FMkl1EFYg2+lU6RZc61qMHkbo7795AZ/8gKwxSMcDgAAAABJRU5ErkJggg==') 6 6, default"
 			},
-			scrollCancel      : 80,
-			cubicBezier       : "cubic-bezier(0,1,0.73,0.95)",
-			cubicBezierBounce : "cubic-bezier(0.11,0.74,0.15,0.80)",
-			scrollBarHide     : true
+			scrollCancel       : 80,
+			cubicBezier        : "cubic-bezier(0,1,0.73,0.95)",
+			cubicBezierBounce  : "cubic-bezier(0.11,0.74,0.15,0.80)",
+			scrollBarHide      : true
 		}, option);
 
 		// 古いブラウザはcursorのdataURLは無視する
@@ -99,6 +102,19 @@
 		this.imgLoaded = 0;
 		this.imgLength = 0;
 		this.sideScroll = false;
+		this.$scrollBarBg = undefined;
+
+		if ( this.option.scrollBarBg ) {
+			this.$scrollBarBg = $("<div class='scrollbarbg'></div>")
+				.css({
+					position           : "absolute",
+					borderRadius       : _borderRadius,
+					WebkitBorderRadius : _borderRadius,
+					MozBorderRadius    : _borderRadius,
+					backgroundColor    : this.option.scrollBarBgColor,
+					opacity            : this.option.scrollBarBgOpacity
+				});
+		}
 
 		// コンテンツの高さがアウターよりも大きければという処理を入れたほうがよさそう
 		elm.css("height", "auto");
@@ -117,8 +133,17 @@
 				.fadeIn(this.option.inSpeed)
 				.delay(this.option.delayTime)
 				.fadeOut(this.option.outSpeed*2);
+			if ( this.option.scrollBarBg ) {
+				this.$scrollBarBg
+					.fadeIn(this.option.inSpeed)
+					.delay(this.option.delayTime)
+					.fadeOut(this.option.outSpeed*2);
+			}
 		} else {
 			this.$bar.fadeIn(this.option.inSpeed);
+			if ( this.option.scrollBarBg ) {
+				this.$scrollBarBg.fadeIn(this.option.inSpeed);
+			}
 		}
 	};
 	Skroll.prototype = {
@@ -264,6 +289,7 @@
 				$bar = this.$bar,
 				$images = this.$images,
 				$outer = this.$outer,
+				$scrollBarBg = this.$scrollBarBg,
 				$barX = this.$barX ? this.$barX : undefined,
 				_elmWidth = parseInt($elm.css("width"), 10),
 				_barHeight = Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2;
@@ -294,6 +320,17 @@
 						})
 				)
 				.parent()
+				.append($scrollBarBg ?
+					$scrollBarBg
+						.css({
+							width   : _opt.scrollBarWidth,
+							height  : parseInt(_opt.height, 10) - _opt.scrollBarSpace*2,
+							top     : _opt.scrollBarSpace,
+							right   : _opt.scrollBarSpace,
+							opacity : _opt.scrollBarBgOpacity
+						})
+					: undefined
+				)
 				.append(
 					$bar
 						.css({
@@ -388,6 +425,12 @@
 						.stop(true, true)
 						.delay(_opt.delayTime)
 						.fadeOut(_opt.outSpeed);
+					if ( _opt.scrollBarBg ) {
+						this.$scrollBarBg
+							.stop(true, true)
+							.delay(_opt.delayTime)
+							.fadeOut(_opt.outSpeed)
+					}
 				}
 			}
 			$bar.css("height", _this.scrollBarHeight);
@@ -402,6 +445,9 @@
 				.bind("mouseover", function() {
 					_this.enteringCursor = true;
 					$bar.stop(true, true).fadeIn(_opt.inSpeed);
+					if ( _opt.scrollBarBg ) {
+						_this.$scrollBarBg.stop(true, true).fadeIn(_opt.inSpeed);
+					}
 				})
 				.bind("mouseleave", function() {
 					_this.enteringCursor = false;
@@ -412,6 +458,8 @@
 					_this.scrolling = false;
 					if ( !_opt.scrollBarHide ) return;
 					$bar.fadeOut(_opt.outSpeed);
+					if ( !_opt.scrollBarBg ) return;
+					_this.$scrollBarBg.fadeOut(_opt.outSpeed);
 				})
 				.bind(MOUSEWHEEL, function(e) {
 					e = e || window.event;
@@ -454,6 +502,8 @@
 						$bar.css("cursor", _opt.cursor.grab);
 						if ( !_this.enteringCursor && _opt.scrollBarHide ) {
 							$bar.fadeOut(_opt.outSpeed);
+							if ( !_opt.scrollBarBg ) return false;
+							_this.$scrollBarBg.fadeOut(_opt.outSpeed);
 						}
 					});
 				return false;
@@ -549,6 +599,9 @@
 				// vertical scrolling
 				if ( !_this.setUp ) {
 					$bar.stop(true, true).fadeIn(_opt.inSpeed);
+					if ( _opt.scrollBarBg ) {
+						_this.$scrollBarBg.stop(true, true).fadeIn(_opt.inSpeed);
+					}
 					_this.setUpScrolling();
 				}
 				_this.innerScrolling(_to);
@@ -643,6 +696,12 @@
 								.stop(true, true)
 								.delay(_opt.delayTime)
 								.fadeOut(_opt.outSpeed);
+							if ( _opt.scrollBarBg ) {
+								_this.$scrollBarBg
+									.stop(true, true)
+									.delay(_opt.delayTime)
+									.fadeOut(_opt.outSpeed);
+							}
 						}
 					}
 					// 上〜下の場合は何もしない
