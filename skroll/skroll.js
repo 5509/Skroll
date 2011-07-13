@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.58
+ * @version      0.59
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-13 22:52
+ * 2011-07-13 23:11
  */
 ;(function($, window, document, undefined) {
 
@@ -44,6 +44,7 @@
 			scrollBarBg        : false,
 			scrollBarBgColor   : "#666",
 			scrollBarBgOpacity : .5,
+			scrollBarGrowth    : "0 0 2px #fff",
 			cursor             : {
 				grab     : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAASUlEQVR42qXNQQqAQAxD0cT7H3qQj/MVKi4MXb3SJscUtX0o0qTtTZHknBetHyCWHTTo1UVUDnfUqLtNUuVJRVRWYRGVv3XKf13yEgJFXOqs0wAAAABJRU5ErkJggg==') 6 6, default",
 				grabbing : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAAOklEQVR42sXQMQ4AIAxCUb73P7SDDNI03YyE6S2k1eryReE0FMkl1EFYg2+lU6RZc61qMHkbo7795AZ/8gKwxSMcDgAAAABJRU5ErkJggg==') 6 6, default"
@@ -74,9 +75,9 @@
 			cursor             : this.option.cursor.grab,
 			backgroundColor    : this.option.scrollBarColor,
 			WebkitTransform    : MATRIX,
-			boxShadow          : "0 0 2px #fff",
-			MozBoxShadow       : "0 0 2px #fff",
-			WebkitBoxShadow    : "0 0 2px #fff"
+			boxShadow          : this.option.scrollBarGrowth,
+			MozBoxShadow       : this.option.scrollBarGrowth,
+			WebkitBoxShadow    : this.option.scrollBarGrowth
 		}).hide();
 		this.$images = $("img", elm);
 		this.scrollingBase = { x: 0, y: 0 };
