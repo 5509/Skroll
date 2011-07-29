@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.7
+ * @version      0.71
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-29 14:58
+ * 2011-07-29 15:50
  */
 /*
  ToDo
@@ -61,7 +61,6 @@
 				grabbing : "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAMAAACeyVWkAAAACVBMVEX///8AAAD///9+749PAAAAA3RSTlP//wDXyg1BAAAAOklEQVR42sXQMQ4AIAxCUb73P7SDDNI03YyE6S2k1eryReE0FMkl1EFYg2+lU6RZc61qMHkbo7795AZ/8gKwxSMcDgAAAABJRU5ErkJggg==') 6 6, default"
 			},
 			scrollCancel       : 80,
-			//cubicBezier        : "cubic-bezier(0,1,0.73,0.95)",
 			cubicBezier        : "cubic-bezier(0.20,0.71,0.30,0.87)",
 			cubicBezierBounce  : "cubic-bezier(0.11,0.74,0.15,0.80)",
 			cubicBezierBar     : "cubic-bazier(0.42,0,1,1)",
@@ -314,7 +313,6 @@
 				var _matrix =  $el.css("WebkitTransform")
 						.replace(/matrix\(([^\(\)]*)\)/, "$1")
 						.split(",");
-
 				return {
 					x: parseInt(_matrix[4], 10),
 					y: parseInt(_matrix[5], 10)
@@ -392,14 +390,10 @@
 				$bar = _this.$bar,
 				$elm = _this.$elm;
 
-//			_next.y = _current.y <= _opt.scrollBarSpace
-//				? _opt.scrollBarSpace : _innerScrolling
-//					? _barDiff : _current.y;
-			_next.y = _current.y <= 0
-				? 0 : _innerScrolling
-					? _barDiff : _current.y;
-
 			if ( MOBILE ) {
+				_next.y = _current.y <= 0
+					? 0 : _innerScrolling
+						? _barDiff : _current.y;
 				_innerNext.y = _current.y * _this.innerScrollVal <= -_scrollBounceCapacity
 					? _scrollBounceCapacity :
 						-_current.y * _this.innerScrollVal <= _maxInnerTop - _scrollBounceCapacity
@@ -434,16 +428,18 @@
 				if ( _current.y > _barDiff ) {
 					_current.y = _barDiff;
 				} else
-				if ( 0 > _current.y ) {
-					_current.y = 0
+				if ( _opt.scrollBarSpace > _current.y ) {
+					_current.y = _opt.scrollBarSpace;
 				}
-				_innerNext.y = _current.y * _this.innerScrollVal <= 0
+				_innerNext.y = (_current.y - _opt.scrollBarSpace) * _this.innerScrollVal <= 0
 					? 0 :
-						-_current.y * _this.innerScrollVal <= _maxInnerTop
+						-(_current.y - _opt.scrollBarSpace) * _this.innerScrollVal <= _maxInnerTop
 							? _maxInnerTop
-								: -_current.y * _this.innerScrollVal;
+								: -(_current.y - _opt.scrollBarSpace) * _this.innerScrollVal;
 				_this.setNext($bar, {
-					y: _next.y
+					y: _current.y <= _opt.scrollBarSpace
+						? _opt.scrollBarSpace : _innerScrolling
+							? _barDiff : _current.y
 				});
 			}
 			_this.setNext($elm, {
@@ -686,7 +682,7 @@
 					_nextInnerY = undefined, // 慣性でインナーが進んだ後
 					_barDiff = _this.outerHeight - _this.scrollBarHeight - _opt.scrollBarSpace*2,
 					_maxInnerTop = -_barDiff * _this.innerScrollVal,
-					_scrollBounceCapacity = _this.outerHeight/5,
+					_scrollBounceCapacity = _this.outerHeight/4,
 					_duration = undefined,
 					// 進む方向 down: false, up: true
 					// moveのときとは逆
