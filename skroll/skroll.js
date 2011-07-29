@@ -1,18 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.71
+ * @version      0.80
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-29 15:50
- */
-/*
- ToDo
- refreshメソッド
- PCの調整
+ * 2011-07-30 00:40
  */
 ;(function($, window, document, undefined) {
 
@@ -29,7 +24,7 @@
 		return this;
 	};
 	$.skroll = function(elm, option) {
-		return new Skroll(elm, option);
+		return new Skroll($(elm), option);
 	};
 
 	// Skroll
@@ -40,7 +35,7 @@
 		// Option
 		_opt = this.option = $.extend({
 			margin             : 0,
-			width              : parseInt(elm.css("width"), 10),
+//			width              : parseInt(elm.css("width"), 10),
 			height             : parseInt(elm.css("height"), 10),
 			inSpeed            : 0.05,
 			outSpeed           : 0.2,
@@ -172,8 +167,31 @@
 		}
 	}
 	Skroll.prototype = {
-		update: function() {
-			
+		refresh: function() {
+			var _opt = this.option;
+			// コンテンツの高さを取得し直す
+			_opt.height = parseInt(this.$elm.css("height"), 10);
+			this.$outer.css({
+				height: _opt.height
+			});
+			this.$elm.css("height", "auto");
+			this.innerHeight = this.$elm.get(0).offsetHeight;
+			// コンテンツアウターの高さを取得し直す
+			this.outerHeight = this.$outer.get(0).offsetHeight;
+			// スクロールバーの高さを取得し直す
+			this.scrollBarHeight = Math.pow(parseInt(this.$outer.height(), 10), 2) / this.innerHeight * 3 / 2;
+			this.$bar.css({
+				height: this.scrollBarHeight
+			});
+			// スクロールバーの背景がある場合は高さを取得し直す
+			if ( this.$scrollBarBg ) {
+				this.$scrollBarBg.css({
+					height: this.outerHeight - _opt.scrollBarSpace*2
+				});
+			}
+			// スクロール量を更新
+			this.diff = this.innerHeight - this.outerHeight;
+			this.innerScrollVal = this.diff / (this.outerHeight - this.scrollBarHeight - this.option.scrollBarSpace*2);
 		},
 		setUpSkroll: function() {
 			var _this = this,
@@ -184,13 +202,11 @@
 				$outer = this.$outer,
 				$scrollBarBg = this.$scrollBarBg,
 				$barX = this.$barX ? this.$barX : undefined,
-				_elmWidth = parseInt($elm.css("width"), 10),
 				_barHeight = Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2;
 
 			this.$outer = $elm
 				.css({
 					margin          : 0,
-					width           : _elmWidth,
 					height          : "auto",
 					overflow        : "auto",
 					position        : MOBILE ? "static" : "relative",
@@ -201,13 +217,9 @@
 					$outer
 						.css({
 							margin        : _opt.margin,
-							//paddingRight  : _opt.scrollBarSpace,
-							//paddingBottom : _this.sideScroll ? _opt.scrollBarSpace : 0,
-							width         : parseInt(_opt.width,  10),
 							height        : parseInt(_opt.height, 10),
 							position      : "relative",
-							overflow      : "hidden",
-							outline       : "none"
+							overflow      : "hidden"
 						})
 				)
 				.parent()
@@ -265,9 +277,6 @@
 					setTimeout(arguments.callee, 30);
 				}());
 			}
-		},
-		getInnerHeight: function(callback) {
-
 		},
 		barFadeIn: function(delay) {
 			var _opt = this.option;
