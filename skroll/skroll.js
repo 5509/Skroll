@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.80
+ * @version      0.82
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-07-30 00:40
+ * 2011-08-01 00:28
  */
 ;(function($, window, document, undefined) {
 
@@ -18,11 +18,12 @@
 		$document = $(document),
 		$html = $("html");
 
-	// Bridge
+	// jQuery plugin
 	$.fn.skroll = function(option) {
 		new Skroll(this, option);
 		return this;
 	};
+	// enable using Skroll methods
 	$.skroll = function(elm, option) {
 		return new Skroll($(elm), option);
 	};
@@ -35,7 +36,6 @@
 		// Option
 		_opt = this.option = $.extend({
 			margin             : 0,
-//			width              : parseInt(elm.css("width"), 10),
 			height             : parseInt(elm.css("height"), 10),
 			inSpeed            : 0.05,
 			outSpeed           : 0.2,
@@ -125,7 +125,6 @@
 				});
 		}
 
-		// コンテンツの高さがアウターよりも大きければという処理を入れたほうがよさそう
 		elm.css("height", "auto");
 		this.innerHeight = elm.get(0).offsetHeight;
 		// Init
@@ -137,6 +136,10 @@
 			this.evnetBindMobile();
 		}
 
+		if ( this.noScrollBar ) {
+			this.$bar.css("opacity", 0);
+			this.$scrollBarBg.css("opacity", 0);
+		} else
 		if ( _opt.scrollBarHide ) {
 			if ( MOBILE ) {
 				this.barFadeIn(_opt.delayTime);
@@ -156,14 +159,7 @@
 				}
 			}
 		} else {
-			if ( MOBILE ) {
-				this.barFadeIn(_opt.delayTime);
-			} else {
-				this.$bar.fadeIn(_opt.inSpeed*1000);
-				if ( _opt.scrollBarBg ) {
-					this.$scrollBarBg.fadeIn(_opt.inSpeed*1000);
-				}
-			}
+			this.barFadeIn();
 		}
 	}
 	Skroll.prototype = {
@@ -179,7 +175,9 @@
 			// コンテンツアウターの高さを取得し直す
 			this.outerHeight = this.$outer.get(0).offsetHeight;
 			// スクロールバーの高さを取得し直す
-			this.scrollBarHeight = Math.pow(parseInt(this.$outer.height(), 10), 2) / this.innerHeight * 3 / 2;
+			this.scrollBarHeight = Math.pow(parseInt(this.$outer.height(), 10), 2) / this.innerHeight;
+			// スクロールバーが20より小さい場合は20で固定
+			this.scrollBarHeight = this.scrollBarHeight < 20 ? 20 : this.scrollBarHeight;
 			this.$bar.css({
 				height: this.scrollBarHeight
 			});
@@ -192,6 +190,19 @@
 			// スクロール量を更新
 			this.diff = this.innerHeight - this.outerHeight;
 			this.innerScrollVal = this.diff / (this.outerHeight - this.scrollBarHeight - this.option.scrollBarSpace*2);
+			// スクロールバーの有無
+			this.noScrollBar = this.scrollBarHeight > this.outerHeight;
+
+			this.scrollingBase = { x: 0, y: 0 };
+			this.innerScrolling();
+
+			if ( this.noScrollBar ) {
+				this.$bar.css("opacity", 0);
+				this.$scrollBarBg.css("opacity", 0);
+			} else {
+				this.$bar.css("opacity", _opt.opacity);
+				this.$scrollBarBg.css("opacity", _opt.scrollBarBgOpacity);
+			}
 		},
 		setUpSkroll: function() {
 			var _this = this,
@@ -202,7 +213,10 @@
 				$outer = this.$outer,
 				$scrollBarBg = this.$scrollBarBg,
 				$barX = this.$barX ? this.$barX : undefined,
-				_barHeight = Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight * 3 / 2;
+				_barHeight = Math.pow(parseInt(_opt.height, 10), 2) / _this.innerHeight;
+
+			// スクロールバーが20より小さい場合は20で固定する
+			_barHeight = _barHeight < 20 ? 20 : _barHeight;
 
 			this.$outer = $elm
 				.css({
@@ -244,21 +258,14 @@
 							opacity : _opt.opacity,
 							zIndex  : _opt.scrollBarZIndex
 						})
-				)
-				.append($barX ?
-					$barX
-						.css({
-							width   : Math.pow(parseInt(_opt.width, 10), 2) / _this.innerWidth,
-							height  : _opt.scrollBarHeight,
-							opacity : _opt.opacity,
-							bottom  : -$barX.get(0).offsetHeight,
-							left    : 0
-						})
-					: undefined
 				);
 
-			_this.scrollBarHeight = _barHeight;
-			_this.innerHeight = $elm.get(0).offsetHeight;
+			this.scrollBarHeight = _barHeight;
+			this.innerHeight = $elm.get(0).offsetHeight;
+			this.diff = this.innerHeight - this.outerHeight;
+
+			// スクロールバーの有無
+			this.noScrollBar = this.scrollBarHeight > _opt.height;
 
 			// 画像がある場合は画像の読み込み完了を待つ
 			if ( $images.length ) {
@@ -280,41 +287,58 @@
 		},
 		barFadeIn: function(delay) {
 			var _opt = this.option;
-			this.$bar
-				.css({
-					WebkitTransitionDuration: _opt.inSpeed + "s",
-					WebkitTransitionDelay: delay + "s",
-					WebkitTransitionProperty: "opacity",
-					opacity: _opt.opacity
-				});
-			if ( _opt.scrollBarBg ) {
-				this.$scrollBarBg
+			if ( this.noScrollBar ) return;
+			if ( !MOBILE ) {
+				this.$bar.stop(true, true).fadeIn(_opt.inSpeed*1000);
+				if ( _opt.scrollBarBg ) {
+					this.$scrollBarBg.stop(true, true).fadeIn(_opt.inSpeed*1000);
+				}
+			} else {
+				this.$bar
 					.css({
 						WebkitTransitionDuration: _opt.inSpeed + "s",
 						WebkitTransitionDelay: delay + "s",
 						WebkitTransitionProperty: "opacity",
-						opacity: _opt.scrollBarBgOpacity
+						opacity: _opt.opacity
 					});
+				if ( _opt.scrollBarBg ) {
+					this.$scrollBarBg
+						.css({
+							WebkitTransitionDuration: _opt.inSpeed + "s",
+							WebkitTransitionDelay: delay + "s",
+							WebkitTransitionProperty: "opacity",
+							opacity: _opt.scrollBarBgOpacity
+						});
+				}
 			}
 		},
 		barFadeOut: function(delay) {
 			var _opt = this.option;
+			if ( this.noScrollBar ) return;
 			if ( !_opt.scrollBarHide ) return;
-			this.$bar
-				.css({
-					WebkitTransitionDuration: _opt.outSpeed + "s",
-					WebkitTransitionDelay: delay + "s",
-					WebkitTransitionProperty: "opacity",
-					opacity: 0
-				});
-			if ( _opt.scrollBarBg ) {
-				this.$scrollBarBg
+
+			if ( !MOBILE ) {
+				this.$bar.fadeOut(_opt.outSpeed*1000);
+				if ( _opt.scrollBarBg ) {
+					this.$scrollBarBg.fadeOut(_opt.outSpeed*1000);
+				}
+			} else {
+				this.$bar
 					.css({
 						WebkitTransitionDuration: _opt.outSpeed + "s",
 						WebkitTransitionDelay: delay + "s",
 						WebkitTransitionProperty: "opacity",
 						opacity: 0
 					});
+				if ( _opt.scrollBarBg ) {
+					this.$scrollBarBg
+						.css({
+							WebkitTransitionDuration: _opt.outSpeed + "s",
+							WebkitTransitionDelay: delay + "s",
+							WebkitTransitionProperty: "opacity",
+							opacity: 0
+						});
+				}
 			}
 		},
 		getCurrent: function($el) {
@@ -374,6 +398,8 @@
 		setUpBeforeScrolling: function(e) {
 			var $outer = this.$outer;
 
+			if ( this.noScrollBar ) return;
+
 			if ( !this.setUp ) {
 				this.setUp = true;
 			} else {
@@ -398,6 +424,8 @@
 				_scrollBarHeight = undefined,
 				$bar = _this.$bar,
 				$elm = _this.$elm;
+
+			if ( this.noScrollBar ) return;
 
 			if ( MOBILE ) {
 				_next.y = _current.y <= 0
@@ -515,10 +543,7 @@
 			$outer
 				.bind("mouseover", function() {
 					_this.enteringCursor = true;
-					$bar.stop(true, true).fadeIn(_opt.inSpeed*1000);
-					if ( _opt.scrollBarBg ) {
-						_this.$scrollBarBg.stop(true, true).fadeIn(_opt.inSpeed*1000);
-					}
+					_this.barFadeIn();
 				})
 				.bind("mouseleave", function() {
 					_this.enteringCursor = false;
@@ -528,9 +553,7 @@
 					_this.setUp = false;
 					_this.scrolling = false;
 					if ( !_opt.scrollBarHide ) return;
-					$bar.fadeOut(_opt.outSpeed*1000);
-					if ( !_opt.scrollBarBg ) return;
-					_this.$scrollBarBg.fadeOut(_opt.outSpeed*1000);
+					_this.barFadeOut();
 				})
 				.bind(MOUSEWHEEL, function(e) {
 					e = e || window.event;
@@ -572,9 +595,7 @@
 						$html.css("cursor", "default");
 						$bar.css("cursor", _opt.cursor.grab);
 						if ( !_this.enteringCursor && _opt.scrollBarHide ) {
-							$bar.fadeOut(_opt.outSpeed*1000);
-							if ( !_opt.scrollBarBg ) return false;
-							_this.$scrollBarBg.fadeOut(_opt.outSpeed*1000);
+							_this.barFadeOut();
 						}
 					});
 				return false;
