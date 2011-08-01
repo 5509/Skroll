@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.82
+ * @version      0.83
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-08-01 00:28
+ * 2011-08-01 14:24
  */
 ;(function($, window, document, undefined) {
 
@@ -36,6 +36,7 @@
 		// Option
 		_opt = this.option = $.extend({
 			margin             : 0,
+			width              : "auto",
 			height             : parseInt(elm.css("height"), 10),
 			inSpeed            : 0.05,
 			outSpeed           : 0.2,
@@ -231,6 +232,7 @@
 					$outer
 						.css({
 							margin        : _opt.margin,
+							width         : _opt.width,
 							height        : parseInt(_opt.height, 10),
 							position      : "relative",
 							overflow      : "hidden"
