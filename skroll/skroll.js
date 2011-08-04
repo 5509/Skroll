@@ -1,13 +1,13 @@
 /**
  * Skroll
  *
- * @version      0.83
+ * @version      0.84
  * @author       nori (norimania@gmail.com)
  * @copyright    5509 (http://5509.me/)
  * @license      The MIT License
  * @link         https://github.com/5509/skroll
  *
- * 2011-08-01 14:24
+ * 2011-08-04 11:47
  */
 ;(function($, window, document, undefined) {
 
@@ -399,9 +399,7 @@
 		},
 		setUpBeforeScrolling: function(e) {
 			var $outer = this.$outer;
-
 			if ( this.noScrollBar ) return;
-
 			if ( !this.setUp ) {
 				this.setUp = true;
 			} else {
@@ -574,10 +572,10 @@
 				var _current = _this.scrollingBase;
 
 				this.dragTop = e.clientY;
-				_this.setUp = false;
+				//_this.setUp = false;
 				_this.dragging = true;
 				_this.scrolling = false;
-				_this.setUpBeforeScrolling(e);
+				if ( !_this.setUp) _this.setUpBeforeScrolling(e);
 
 				_this.css([$html, $bar], {cursor: _opt.cursor.grabbing});
 
@@ -593,7 +591,9 @@
 					.bind(_this.mouseup, function() {
 						_this.dragging = false;
 						_this.setUp = false;
-						$document.unbind(_this.mousemove, _this.mouseup);
+						$document
+							.unbind(_this.mousemove)
+							.unbind(_this.mouseup);
 						$html.css("cursor", "default");
 						$bar.css("cursor", _opt.cursor.grab);
 						if ( !_this.enteringCursor && _opt.scrollBarHide ) {
